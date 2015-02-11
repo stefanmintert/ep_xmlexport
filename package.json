@@ -1,21 +1,21 @@
 {
-  "name": "ep_latexexport",
-  "description": "LaTeX Export for Etherpad Lite",
-  "homepage": "https://github.com/edy/ep_latexexport",
+  "name": "ep_xmlexport",
+  "description": "XML Export for Etherpad Lite",
+  "homepage": "https://github.com/edy/ep_xmlexport",
   "keywords": [
     "etherpad",
-    "latex",
+    "xml",
     "export"
   ],
   "author": {
-    "name": "Eduard Baun",
-    "email": "eduard@baun.de",
-    "url": "http://baun.de"
+    "name": "Stefan Mintert",
+    "email": "todo",
+    "url": "http://www.linkwerk.com"
   },
   "version": "1.0.1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/edy/ep_latexexport.git"
+    "url": "https://github.com/stefanmintert/ep_xmlexport.git"
   },
   "dependencies": {},
   "devDependencies": {},
