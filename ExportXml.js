@@ -1,69 +1,67 @@
+/*jshint loopfunc: true */
+/* TODO refactor to be able to remove the above directive */
 var async = require("ep_etherpad-lite/node_modules/async");
 var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 var padManager = require("ep_etherpad-lite/node/db/PadManager");
 var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
 var Security = require('ep_etherpad-lite/static/js/security');
 
-function getPadXml(pad, revNum, callback)
-{
-  var atext = pad.atext;
-  var xml;
-  async.waterfall([
+function getPadXml(pad, revNum, callback) {
+  var atext, xml;
 
-  // fetch revision atext
-  function (callback)
-  {
-    if (revNum != undefined)
-    {
-      pad.getInternalRevisionAText(revNum, function (err, revisionAtext)
-      {
-        if(ERR(err, callback)) return;
-        atext = revisionAtext;
-        callback();
-      });
-    }
-    else
-    {
-      callback(null);
-    }
-  },
+  if (revNum) {
+      pad.getInternalRevisionAText(revNum, function (err, revisionAtext) {
+	        if (ERR(err, callback)) {
+	        	atext = pad.atext;
+	        } else {
+	        	atext = revisionAtext;
+	        }
+	      }
+      );
+  } else {
+	  atext = pad.atext;
+  }
+  
+  xml = getXmlFromAtext(pad, atext);
 
-  // convert atext to xml
-  function (callback)
-  {
-    xml = getXmlFromAtext(pad, atext);
-    callback(null);
-  }],
-
-  // run final callback
-  function (err)
-  {
-    if(ERR(err, callback)) return;
-    callback(null, xml);
-  });
+  callback(null, xml);
 }
 
-exports.getPadXml = getPadXml;
-
-function getXmlFromAtext(pad, atext)
-{
-  var apool = pad.apool();
+function getXmlFromAtext(pad, atext) {
+  var apool = pad.pool;
   var textLines = atext.text.slice(0, -1).split('\n');
   var attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
 
-  var tags = ['textbf', 'textit', 'underline', 'sout'];
-  var props = ['bold', 'italic', 'underline', 'strikethrough'];
+  var props = [];
   var anumMap = {};
 
+  /*
+   * Collect all property names (=attribute names) which are used in apool
+   */
+  
+  for (var propName in apool.numToAttrib) {
+	  if (apool.numToAttrib.hasOwnProperty(propName)) {
+		  props.push(apool.numToAttrib[propName][0]);
+	  }
+  }  
+
+  /*
+   * anumMap maps the attribute numbers to their index in the props array.
+   * This is legacy code. In our case both numbers should always be the same.
+   * TODO: remove anumMap from the entire code.
+   */
   props.forEach(function (propName, i)
   {
+	  anumMap[i] = i;
+	  /*
     var propTrueNum = apool.putAttrib([propName, true], true);
     if (propTrueNum >= 0)
     {
       anumMap[propTrueNum] = i;
     }
+    */
   });
-
+  
   var headingtags = ['section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph', 'subparagraph'];
   var headingprops = [['heading', 'h1'], ['heading', 'h2'], ['heading', 'h3'], ['heading', 'h4'], ['heading', 'h5'], ['heading', 'h6']];
   var headinganumMap = {};
@@ -86,7 +84,8 @@ function getXmlFromAtext(pad, atext)
     }
   });
 
-  function getLineXml(text, attribs)
+
+  function getLineXml(text, attribs, apool)
   {
     var propVals = [false, false, false];
     var ENTER = 1;
@@ -105,16 +104,17 @@ function getXmlFromAtext(pad, atext)
     function emitOpenTag(i)
     {
       openTags.unshift(i);
-      assem.append('<');
-      assem.append(tags[i]);
-      assem.append('>');
+      assem.append('<attribute key="');
+      assem.append(props[i]);
+      assem.append('" value="');
+      assem.append(apool.numToAttrib[i][1]);
+      assem.append('">');
     }
 
     function emitCloseTag(i)
     {
       openTags.shift();
-      assem.append('</');
-      assem.append(tags[i]);
+      assem.append('</attribute');
       assem.append('>');
     }
     
@@ -160,8 +160,9 @@ function getXmlFromAtext(pad, atext)
 
     var idx = 0;
 
-    function processNextChars(numChars)
-    {
+    function processNextChars(numChars) {
+      var tags2close = [];
+      
       if (numChars <= 0)
       {
         return;
@@ -190,16 +191,15 @@ function getXmlFromAtext(pad, atext)
             }
           }
         });
-        for (var i = 0; i < propVals.length; i++)
-        {
-          if (propVals[i] === true)
+        for (var j = 0; j < propVals.length; j++) {
+          if (propVals[j] === true)
           {
-            propVals[i] = LEAVE;
+            propVals[j] = LEAVE;
             propChanged = true;
           }
-          else if (propVals[i] === STAY)
+          else if (propVals[j] === STAY)
           {
-            propVals[i] = true; // set it back
+            propVals[j] = true; // set it back
           }
         }
 
@@ -228,31 +228,31 @@ function getXmlFromAtext(pad, atext)
             }
           }
 
-          var tags2close = [];
+          tags2close = [];
 
-          for (var i = propVals.length - 1; i >= 0; i--)
-          {
-            if (propVals[i] === LEAVE)
+          for (var k = propVals.length - 1; k >= 0; k--) {
+            if (propVals[k] === LEAVE)
             {
               //emitCloseTag(i);
-              tags2close.push(i);
-              propVals[i] = false;
+              tags2close.push(k);
+              propVals[k] = false;
             }
-            else if (propVals[i] === STAY)
+            else if (propVals[k] === STAY)
             {
               //emitCloseTag(i);
-              tags2close.push(i);
+              tags2close.push(k);
             }
           }
           
           orderdCloseTags(tags2close);
           
-          for (var i = 0; i < propVals.length; i++)
+          for (var l = 0; l < propVals.length; l++)
           {
-            if (propVals[i] === ENTER || propVals[i] === STAY)
+            if (propVals[l] === ENTER || propVals[l] === STAY)
             {
-              emitOpenTag(i);
-              propVals[i] = true;
+              emitOpenTag(l);
+              
+              propVals[l] = true;
             }
           }
           // propVals is now all {true,false} again
@@ -278,13 +278,13 @@ function getXmlFromAtext(pad, atext)
         assem.append(s);
       } // end iteration over spans in line
       
-      var tags2close = [];
-      for (var i = propVals.length - 1; i >= 0; i--)
+      tags2close = [];
+      for (var n = propVals.length - 1; n >= 0; n--)
       {
-        if (propVals[i])
+        if (propVals[n])
         {
-          tags2close.push(i);
-          propVals[i] = false;
+          tags2close.push(n);
+          propVals[n] = false;
         }
       }
       
@@ -315,7 +315,7 @@ function getXmlFromAtext(pad, atext)
     assem = assem.toString();
     assem = assem.replace(/\&/g, '\&amp;');
 
-    return assem;
+    return "<line>" + assem + "</line>";
   } // end getLineXml
   var pieces = [];
 
@@ -330,7 +330,7 @@ function getXmlFromAtext(pad, atext)
   for (var i = 0; i < textLines.length; i++)
   {
     var line = _analyzeLine(textLines[i], attribLines[i], apool);
-    var lineContent = getLineXml(line.text, line.aline);
+    var lineContent = getLineXml(line.text, line.aline, apool);
             
     if (line.listLevel)//If we are inside a list
     {
@@ -351,14 +351,7 @@ function getXmlFromAtext(pad, atext)
       if (whichList >= lists.length)//means we are on a deeper level of indentation than the previous line
       {
         lists.push([line.listLevel, line.listTypeName]);
-        if(line.listTypeName == "number")
-        {
-          pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"<numberedList>\n"+(new Array(line.listLevel*4)).join(' ')+"<li>", lineContent || "\n", '</li>');
-        }
-        else
-        {
-          pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"<itemizedList>\n"+(new Array(line.listLevel*4)).join(' ')+"<li>", lineContent || "\n", '</li>');
-        }
+        pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"<list type='" + line.listTypeName + "'>\n"+(new Array(line.listLevel*4)).join(' ')+"<item>", lineContent || "\n", '</item>'); // number or bullet
       }
       //the following code *seems* dead after my patch.
       //I keep it just in case I'm wrong...
@@ -370,11 +363,11 @@ function getXmlFromAtext(pad, atext)
           // non-blank line, end all lists
           if(line.listTypeName == "number")
           {
-            pieces.push(new Array(lists.length + 1).join('</li></ol>'));
+            pieces.push(new Array(lists.length + 1).join('</item></ol>'));
           }
           else
           {
-            pieces.push(new Array(lists.length + 1).join('</li></ul>'));
+            pieces.push(new Array(lists.length + 1).join('</item></ul>'));
           }
           lists.length = 0;
           pieces.push(lineContent, '<br>');
@@ -389,31 +382,17 @@ function getXmlFromAtext(pad, atext)
       {
         while (whichList < lists.length - 1)
         {
-          if(lists[lists.length - 1][1] == "number")
-          {
-            pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"</numberedList>");
-          }
-          else
-          {
-            pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"</itemizedList>");
-          }
+          pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"</list>"); // number or bullet
           lists.length--;
         }
-        pieces.push("\n"+(new Array(line.listLevel*4)).join(' ')+"<li>", lineContent || "\n", '</li>');
+        pieces.push("\n"+(new Array(line.listLevel*4)).join(' ')+"<item>", lineContent || "\n", '</item>');
       }
     }
     else//outside any list
     {
       while (lists.length > 0)//if was in a list: close it before
       {
-        if(lists[lists.length - 1][1] == "number")
-        {
-          pieces.push("\n"+(new Array((lists.length-1)*4)).join(' ')+"</numberedList>\n");
-        }
-        else
-        {
-          pieces.push("\n"+(new Array((lists.length-1)*4)).join(' ')+"</itemizedList>\n");
-        }
+        pieces.push("\n"+(new Array((lists.length-1)*4)).join(' ')+"</list>\n"); // number or bullet
         lists.length--;
       }      
       pieces.push(lineContent, "\n");
@@ -422,14 +401,7 @@ function getXmlFromAtext(pad, atext)
   
   for (var k = lists.length - 1; k >= 0; k--)
   {
-    if(lists[k][1] == "number")
-    {
-      pieces.push("\n</numberedList>\n");
-    }
-    else
-    {
-      pieces.push("\n</itemizedList>\n");
-    }
+    pieces.push("\n</list>\n"); // number or bullet
   }
 
   return pieces.join("");
@@ -437,6 +409,9 @@ function getXmlFromAtext(pad, atext)
 
 function _analyzeLine(text, aline, apool)
 {
+	//console.log("##############################");
+	  //console.log(text);
+	
   var line = {};
 
   // identify list
@@ -471,6 +446,7 @@ function _analyzeLine(text, aline, apool)
     line.aline = aline;
   }
 
+  //console.log(line);
   return line;
 }
 
@@ -486,7 +462,7 @@ exports.getPadXmlDocument = function (padId, revNum, callback)
       callback(null, '<?xml version="1.0"?>\n<pad>\n' + xml + '\n</pad>');
     });
   });
-}
+};
 
 // copied from ACE
 var _REGEX_WORDCHAR = /[\u0030-\u0039\u0041-\u005A\u0061-\u007A\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u0100-\u1FFF\u3040-\u9FFF\uF900-\uFDFF\uFE70-\uFEFE\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFDC]/;
