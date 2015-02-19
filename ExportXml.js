@@ -5,6 +5,13 @@ var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 var padManager = require("ep_etherpad-lite/node/db/PadManager");
 var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
 var Security = require('ep_etherpad-lite/static/js/security');
+var lineStyleFilter = require('ep_etherpad-lite/static/js/linestylefilter');
+
+
+var LISTSLOWLEVEL = false;
+var LINEATTRIBUTESLOWLEVEL = false;
+//var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
+var DROPATTRIBUTES = []; 
 
 function getPadXml(pad, revNum, callback) {
   var atext, xml;
@@ -50,48 +57,20 @@ function getXmlFromAtext(pad, atext) {
    * This is legacy code. In our case both numbers should always be the same.
    * TODO: remove anumMap from the entire code.
    */
-  props.forEach(function (propName, i)
-  {
-	  anumMap[i] = i;
-	  /*
-    var propTrueNum = apool.putAttrib([propName, true], true);
-    if (propTrueNum >= 0)
-    {
-      anumMap[propTrueNum] = i;
-    }
-    */
-  });
-  
-  var headingtags = ['section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph', 'subparagraph'];
-  var headingprops = [['heading', 'h1'], ['heading', 'h2'], ['heading', 'h3'], ['heading', 'h4'], ['heading', 'h5'], ['heading', 'h6']];
-  var headinganumMap = {};
-
-  headingprops.forEach(function (prop, i)
-  {
-    var name;
-    var value;
-    if (typeof prop === 'object') {
-      name = prop[0];
-      value = prop[1];
-    } else {
-      name = prop;
-      value = true;
-    }
-    var propTrueNum = apool.putAttrib([name, value], true);
-    if (propTrueNum >= 0)
-    {
-      headinganumMap[propTrueNum] = i;
-    }
+  props.forEach(function (propName, i) {
+	  if (DROPATTRIBUTES.indexOf(propName) < 0) { // Attribute shall be dropped
+		  anumMap[i] = i;
+	  }
   });
 
-
-  function getLineXml(text, attribs, apool)
-  {
+  function getLineXml(text, attribs, apool) {
     var propVals = [false, false, false];
     var ENTER = 1;
     var STAY = 2;
     var LEAVE = 0;
 
+    
+    
     // Use order of tags (b/i/u) as order of nesting, for simplicity
     // and decent nesting.  For example,
     // <b>Just bold<b> <b><i>Bold and italics</i></b> <i>Just italics</i>
@@ -101,8 +80,7 @@ function getXmlFromAtext(pad, atext) {
     var assem = Changeset.stringAssembler();
 
     var openTags = [];
-    function emitOpenTag(i)
-    {
+    function emitOpenTag(i) {
       openTags.unshift(i);
       assem.append('<attribute key="');
       assem.append(props[i]);
@@ -111,21 +89,16 @@ function getXmlFromAtext(pad, atext) {
       assem.append('">');
     }
 
-    function emitCloseTag(i)
-    {
+    function emitCloseTag(i) {
       openTags.shift();
       assem.append('</attribute');
       assem.append('>');
     }
     
-    function orderdCloseTags(tags2close)
-    {
-      for(var i=0;i<openTags.length;i++)
-      {
-        for(var j=0;j<tags2close.length;j++)
-        {
-          if(tags2close[j] == openTags[i])
-          {
+    function orderdCloseTags(tags2close) {
+      for(var i=0;i<openTags.length;i++) {
+        for(var j=0;j<tags2close.length;j++) {
+          if(tags2close[j] == openTags[i]) {
             emitCloseTag(tags2close[j]);
             i--;
             break;
@@ -133,38 +106,53 @@ function getXmlFromAtext(pad, atext) {
         }
       }
     }
+    
+    
+    
+    
+    var idx = 0;
+    
+    
+    var lmkr = false;
+    var lineAttributes = [];
 
-    // start heading check
-    var heading = false;
-    var deletedAsterisk = false; // we need to delete * from the beginning of the heading line
-    var iter2 = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
-    if (iter2.hasNext()) {
-      var o2 = iter2.next();
-      
-      // iterate through attributes
-      Changeset.eachAttribNumber(o2.attribs, function (a) {
-        
-        if (a in headinganumMap)
-        {
-          var i = headinganumMap[a]; // i = 0 => bold, etc.
-          heading = headingtags[i];
-        }
-      });
+    if (LINEATTRIBUTESLOWLEVEL !== true) {
+	    // start lineMarker (lmkr) check
+	    var deletedAsterisk = false; // we need to delete * from the beginning of the heading line
+	    var firstCharacterOfLineIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
+	
+	    if (firstCharacterOfLineIterator.hasNext()) {
+	      var o2 = firstCharacterOfLineIterator.next();
+	      
+	      // iterate through attributes
+	      Changeset.eachAttribNumber(o2.attribs, function (a) {		    
+		    lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
+	
+		    if (apool.numToAttrib[a][0] === "lmkr") {
+	    		lmkr = true;
+	    	}
+	      });
+	    }    
+    
+    
+	    
+	    if (lmkr) {
+	    	idx = 1;  // begin attribute processing after lmkr character
+	    }
     }
-
-    if (heading) {
-      assem.append('<'+heading+'>');
-    }
+    
+    
+    
+    
+    
 
     var urls = _findURLs(text);
 
-    var idx = 0;
 
     function processNextChars(numChars) {
       var tags2close = [];
       
-      if (numChars <= 0)
-      {
+      if (numChars <= 0) {
         return;
       }
 
@@ -268,12 +256,11 @@ function getXmlFromAtext(pad, atext) {
         //removes the characters with the code 12. Don't know where they come 
         //from but they break the abiword parser and are completly useless
         s = s.replace(String.fromCharCode(12), "");
-
-        // delete * if this line is a heading
-        if (heading && !deletedAsterisk) {
-          s = s.substring(1);
-          deletedAsterisk = true;
+        
+        if (lmkr) {
+        	s = s.substring(1);
         }
+        
         
         assem.append(s);
       } // end iteration over spans in line
@@ -291,10 +278,8 @@ function getXmlFromAtext(pad, atext) {
       orderdCloseTags(tags2close);
     } // end processNextChars
 
-    if (urls)
-    {
-      urls.forEach(function (urlData)
-      {
+    if (urls) {
+      urls.forEach(function (urlData) {
         var startIndex = urlData[0];
         var url = urlData[1];
         var urlLength = url.length;
@@ -306,16 +291,27 @@ function getXmlFromAtext(pad, atext) {
     }
 
     processNextChars(text.length - idx);
-
-    if (heading) {
-        assem.append('</'+heading+'>');
-    }
-
+  
     // replace &, _
     assem = assem.toString();
     assem = assem.replace(/\&/g, '\&amp;');
+    
+    var startTag = '<line';
+    var endTag = '</line>';
+    
+    if (lmkr) {
+    	for (var i = 0; i < lineAttributes.length; i=i+1) {
+    		startTag += ' ';
+    		startTag += lineAttributes[i][0];
+    		startTag += '="';
+    		startTag += lineAttributes[i][1];
+    		startTag += '"';    		
+    	}
+    }
+    startTag += ">";
+    
 
-    return "<line>" + assem + "</line>";
+    return startTag + assem + endTag;
   } // end getLineXml
   var pieces = [];
 
@@ -327,12 +323,11 @@ function getXmlFromAtext(pad, atext) {
   // want to deal gracefully with blank lines.
   // => keeps track of the parents level of indentation
   var lists = []; // e.g. [[1,'bullet'], [3,'bullet'], ...]
-  for (var i = 0; i < textLines.length; i++)
-  {
+  for (var i = 0; i < textLines.length; i++) {
     var line = _analyzeLine(textLines[i], attribLines[i], apool);
-    var lineContent = getLineXml(line.text, line.aline, apool);
-            
-    if (line.listLevel)//If we are inside a list
+    var lineContent = getLineXml(line.text, line.aline, apool);    
+    
+    if (line.listLevel && (LISTSLOWLEVEL !== true))//If we are inside a list
     {
       // do list stuff
       var whichList = -1; // index into lists or -1
@@ -353,31 +348,7 @@ function getXmlFromAtext(pad, atext) {
         lists.push([line.listLevel, line.listTypeName]);
         pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"<list type='" + line.listTypeName + "'>\n"+(new Array(line.listLevel*4)).join(' ')+"<item>", lineContent || "\n", '</item>'); // number or bullet
       }
-      //the following code *seems* dead after my patch.
-      //I keep it just in case I'm wrong...
-      /*else if (whichList == -1)//means we are not inside a list
-      {
-        if (line.text)
-        {
-          console.log('trace 1');
-          // non-blank line, end all lists
-          if(line.listTypeName == "number")
-          {
-            pieces.push(new Array(lists.length + 1).join('</item></ol>'));
-          }
-          else
-          {
-            pieces.push(new Array(lists.length + 1).join('</item></ul>'));
-          }
-          lists.length = 0;
-          pieces.push(lineContent, '<br>');
-        }
-        else
-        {
-          console.log('trace 2');
-          pieces.push('<br><br>');
-        }
-      }*/
+
       else//means we are getting closer to the lowest level of indentation
       {
         while (whichList < lists.length - 1)
@@ -396,7 +367,7 @@ function getXmlFromAtext(pad, atext) {
         lists.length--;
       }      
       pieces.push(lineContent, "\n");
-    }
+    }    
   }
   
   for (var k = lists.length - 1; k >= 0; k--)
@@ -409,8 +380,6 @@ function getXmlFromAtext(pad, atext) {
 
 function _analyzeLine(text, aline, apool)
 {
-	//console.log("##############################");
-	  //console.log(text);
 	
   var line = {};
 
@@ -420,9 +389,9 @@ function _analyzeLine(text, aline, apool)
   if (aline)
   {
     var opIter = Changeset.opIterator(aline);
-    if (opIter.hasNext())
-    {
+    if (opIter.hasNext() && (LISTSLOWLEVEL !== true) ) {
       var listType = Changeset.opAttributeValue(opIter.next(), 'list', apool);
+
       if (listType)
       {
         lineMarker = 1;
@@ -446,7 +415,6 @@ function _analyzeLine(text, aline, apool)
     line.aline = aline;
   }
 
-  //console.log(line);
   return line;
 }
 
