@@ -5,10 +5,15 @@ var exportXml = require('./ExportXml');
 exports.expressCreateServer = function (hook_name, args, cb) {
 	args.app.get('/p/:pad/:rev?/export/xml', function(req, res, next) {
 		var padID = req.params.pad;
-		var revision = req.params.rev ? req.params.rev : null;
-
-		exportXml.getPadXmlDocument(padID, revision, function(err, result) {
-			res.contentType('plain/text');
+		var options = {
+				revision: (req.params.rev ? req.params.rev : null),
+				lists: (req.query.lists ? Boolean(req.query.lists) : false),
+				lineattribs: (req.query.lineattribs ? Boolean(req.query.lineattribs) : false)
+		};
+		
+		
+		exportXml.getPadXmlDocument(padID, options, function(err, result) {
+			res.contentType('plain/xml');
 			res.send(result);
 		});
 	});
