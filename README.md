@@ -13,7 +13,7 @@ You can use the plug-in via a graphical UI or via HTTP API calls.
 
 The plug-in adds itself to the list of export formats. Choose `XML` from list of formats. 
 
-You can't control the output format using the GUI. If you need something different than the default XML, use the HTTP API instead.
+You can't control the XML output format using the GUI. If you need something different from the default XML, use the HTTP API instead.
 
 TODO: Make the default configurable. 
 
