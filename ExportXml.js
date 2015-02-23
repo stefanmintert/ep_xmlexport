@@ -151,7 +151,6 @@ function getXmlFromAtext(pad, atext, reqOptions) {
 
       var urls = _findURLs(text);
 
-
       function processNextChars(numChars) {
         var tags2close = [];
         
@@ -281,6 +280,8 @@ function getXmlFromAtext(pad, atext, reqOptions) {
         orderdCloseTags(tags2close);
       } // end processNextChars
 
+      
+      /* TODO: URI detection should be re-worked to fit in XML structure
       if (urls) {
         urls.forEach(function (urlData) {
           var startIndex = urlData[0];
@@ -292,7 +293,8 @@ function getXmlFromAtext(pad, atext, reqOptions) {
           assem.append('</uri>');
         });
       }
-
+      */
+      
       processNextChars(text.length - idx);
     
       // replace &, _
