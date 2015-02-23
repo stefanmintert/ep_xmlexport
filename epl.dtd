@@ -1,0 +1,17 @@
+<!--
+    DTD for Etherpad Lite generic XML export
+    according to ep_xmlexport plug-in
+    
+    Website: https://github.com/stefanmintert/ep_xmlexport
+    
+    Typical usage:
+    
+    <!DOCTYPE pad PUBLIC "TODO" "epl.dtd">
+    <pad>...</pad>
+    
+-->
+<!ELEMENT pad       (line+)>
+<!ELEMENT line      (#PCDATA | attribute)*>
+<!ELEMENT attribute (#PCDATA | attribute)*>
+<!ATTLIST attribute key CDATA #REQUIRED
+                    value CDATA #REQUIRED>

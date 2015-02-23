@@ -22,11 +22,11 @@ TODO: Make the default configurable.
 
 ### Request URIs
 
-####Basic call
+####Basic call, produces generic EPL XML
 
     http://<hostPort>/p/<padName>/export/xml
 
-####Choose pad revision
+####Choose pad revision, produces generic EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml
 
@@ -34,9 +34,13 @@ TODO: Make the default configurable.
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lineattribs=true
 
+Removes the line marker (asterisk with attribute lmkr) from a line and adds all lmkr attributes as XML attributes to the `line` element. `key`/`value` become the name/value of the correpsonding line attribute.  
+
 ####Control output of lists markup
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lists=true
+
+Generates `list` and `item` elements. 
 
 ### Response
 
@@ -48,7 +52,19 @@ Little is known about dealing with the correct encoding (BOM, XML declaration, H
 
 #### Message body
 
-TODO: Provide a DTD/Schema for XML format
+The plug-in produces well-formed XML.
 
-Note: The XML format changes if output control parameters are set to `true`. A detailed description will follow.
+You have the choice of exporting generic EPL XML or non-generic EPL XML. What does this mean?
+
+##### Generic EPL XML (default)
+
+The generic export mode simply translates every line of pad content into a `line` element in XML, and every pad attribute into an `attribute` element in XML. `attribute` *elements* carry `key` and `value` XML *attributes*. (Don't get confused: EPL attributes are transformed to XML elements named "attribute"; their key/values are transformed to XML attributes.) 
+
+You can validate the generic EPL XML against the [epl.dtd](epl.dtd).
+
+##### Non-generic EPL XML
+
+The XML format changes if at least one of the output control parameters are set to `true`. How the format changes is described for each of the control paramaters, see above.
+
+There's no DTD or schema for non-generic EPL XML. Why? Because the XML format changes with every new plug-in that introduces a new line marker.
 
