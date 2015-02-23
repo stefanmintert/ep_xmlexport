@@ -20,7 +20,7 @@ TODO: Make the default configurable.
 
 ## HTTP API
 
-### Calls
+### Request URIs
 
 ####Basic call
 
@@ -42,10 +42,13 @@ TODO: Make the default configurable.
 
 #### MIME type and encoding
 
-Currently the MIME type `plain/xml` is used. Little is known about dealing with the correct encoding (BOM, XML declaration, HTTP header). A switch to `application/xml` might be reasonable. 
+Currently the MIME type `plain/xml` is used. A switch to `application/xml` might be reasonable. 
+
+Little is known about dealing with the correct encoding (BOM, XML declaration, HTTP header) in EPL. If you think I'm doing wrong, let me know (fork & PR appreciated).
 
 #### Message body
 
 TODO: Provide a DTD/Schema for XML format
 
-Note: The XML formats changes if output control parameters are set to `true`. A detailed description will follow.
+Note: The XML format changes if output control parameters are set to `true`. A detailed description will follow.
+
