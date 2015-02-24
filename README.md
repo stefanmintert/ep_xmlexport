@@ -54,7 +54,7 @@ Little is known about dealing with the correct encoding (BOM, XML declaration, H
 
 The plug-in produces well-formed XML.
 
-You have the choice of exporting generic EPL XML or non-generic EPL XML. What does this mean?
+You have the choice of exporting *generic EPL XML* or *non-generic EPL XML*. What does this mean?
 
 ##### Generic EPL XML (default)
 
@@ -67,4 +67,28 @@ You can validate the generic EPL XML against the [epl.dtd](epl.dtd).
 The XML format changes if at least one of the output control parameters are set to `true`. How the format changes is described for each of the control paramaters, see above.
 
 There's no DTD or schema for non-generic EPL XML. Why? Because the XML format changes with every new plug-in that introduces a new line marker.
+
+
+
+## Legal Information
+
+The work on this plug-in began as a fork of <https://github.com/edy/ep_latexexport>, which is available under an Apache license. 
+
+It's now a project on it's own with significant changes. Furthermore I plan a major re-factoring of the current code.
+
+My own part of work is available under the following license.
+
+   Copyright \[2015\] \[Stefan Mintert\]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 
