@@ -78,7 +78,7 @@ It's now a project on it's own with significant changes. Furthermore I plan a ma
 
 My own part of work is available under the following license.
 
-       Copyright [2015] [Stefan Mintert]
+       Copyright 2015 Stefan Mintert
     
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
