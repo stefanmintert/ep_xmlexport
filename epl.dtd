@@ -1,5 +1,5 @@
 <!--
-    DTD for Etherpad Lite generic XML export
+    DTD for generic XML export of Etherpad Lite 
     according to ep_xmlexport plug-in
     
     Website: https://github.com/stefanmintert/ep_xmlexport
