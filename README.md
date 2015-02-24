@@ -78,13 +78,13 @@ It's now a project on it's own with significant changes. Furthermore I plan a ma
 
 My own part of work is available under the following license.
 
-       Copyright \[2015\] \[Stefan Mintert\]
+       Copyright [2015] [Stefan Mintert]
     
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
        You may obtain a copy of the License at
     
-         <http://www.apache.org/licenses/LICENSE-2.0>
+         http://www.apache.org/licenses/LICENSE-2.0
     
        Unless required by applicable law or agreed to in writing, software
        distributed under the License is distributed on an "AS IS" BASIS,
