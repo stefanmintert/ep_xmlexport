@@ -1,15 +1,8 @@
 /*jshint loopfunc: true */
 /* TODO refactor to be able to remove the above directive */
-var async = require("ep_etherpad-lite/node_modules/async");
 var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 var padManager = require("ep_etherpad-lite/node/db/PadManager");
 var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
-var Security = require('ep_etherpad-lite/static/js/security');
-var lineStyleFilter = require('ep_etherpad-lite/static/js/linestylefilter');
-
-
-//var TRANSFORMLISTS = false;
-//var COLLECTLINEATTRIBUTES = true;
 
 //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
 var DROPATTRIBUTES = []; 
@@ -19,7 +12,7 @@ function getPadXml(pad, reqOptions, callback) {
 	var revNum = reqOptions.revision;
 
 
-      if (revNum) {
+    if (revNum) {
           pad.getInternalRevisionAText(revNum, function (err, revisionAtext) {
 	        if (ERR(err, callback)) {
 	        	atext = pad.atext;
