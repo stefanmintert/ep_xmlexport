@@ -22,21 +22,21 @@ TODO: Make the default configurable.
 
 ### Request URIs
 
-####Basic call, produces generic EPL XML
+####Basic call, requesting generic EPL XML
 
     http://<hostPort>/p/<padName>/export/xml
 
-####Choose pad revision, produces generic EPL XML
+####Choose pad revision, requesting generic EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml
 
-####Control output of line attributes (handling of EPL line marker, lmkr)
+####Control output of line attributes (handling of EPL line marker, lmkr), requesting extented EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lineattribs=true
 
 Removes the line marker (asterisk with attribute lmkr) from a line and adds all lmkr attributes as XML attributes to the `line` element. `key`/`value` become the name/value of the correpsonding line attribute.  
 
-####Control output of lists markup
+####Control output of lists markup, requesting extented EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lists=true
 
@@ -54,7 +54,7 @@ Little is known about dealing with the correct encoding (BOM, XML declaration, H
 
 The plug-in produces well-formed XML.
 
-You have the choice of exporting *generic EPL XML* or *non-generic EPL XML*. What does this mean?
+You have the choice of exporting *generic EPL XML* or *extended EPL XML* (non-generic). What does this mean?
 
 ##### Generic EPL XML (default)
 
@@ -62,11 +62,11 @@ The generic export mode simply translates every line of pad content into a `line
 
 You can validate the generic EPL XML against the [epl.dtd](epl.dtd).
 
-##### Non-generic EPL XML
+##### Extended EPL XML
 
 The XML format changes if at least one of the output control parameters are set to `true`. How the format changes is described for each of the control paramaters, see above.
 
-There's no DTD or schema for non-generic EPL XML. Why? Because the XML format changes with every new plug-in that introduces a new line marker.
+There's no only an experimental DTD for extended EPL XML: [epl-x.dtd](epl-x.dtd). Why experimental? Because the XML format changes with every new plug-in that introduces a new line marker attribute. BTW: The '-x' means "extended", not "experimental".
 
 
 
