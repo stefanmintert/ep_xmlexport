@@ -38,18 +38,23 @@
 
 -->
 <!ELEMENT pad       (line | list)+>
-<!ELEMENT line      (#PCDATA | attribute)*>
+<!ELEMENT line      (#PCDATA | attribute | matched-text)*>
 <!ATTLIST line      author CDATA #IMPLIED
                     insertorder CDATA #IMPLIED
                     list CDATA #IMPLIED
                     heading CDATA #IMPLIED
                     lmkr CDATA #IMPLIED
                     start CDATA #IMPLIED
+                    align (center | left | justify | right) "left"
 >
 <!ELEMENT list      (item)+>
 <!ATTLIST list      type CDATA #REQUIRED>
 <!ELEMENT item      (line)>
-<!ELEMENT attribute (#PCDATA | attribute)*>
+<!ELEMENT attribute (#PCDATA | attribute | matched-text)*>
 <!ATTLIST attribute key CDATA #REQUIRED
-                    value CDATA #REQUIRED>
-
+                    value CDATA #REQUIRED
+>
+<!ELEMENT matched-text (#PCDATA | attribute | matched-text)*>
+<!ATTLIST matched-text key CDATA #REQUIRED
+                       value CDATA #REQUIRED
+>

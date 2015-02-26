@@ -8,7 +8,9 @@ exports.expressCreateServer = function (hook_name, args, cb) {
 		var options = {
 				revision: (req.params.rev ? req.params.rev : null),
 				lists: (req.query.lists ? Boolean(req.query.lists) : false),
-				lineattribs: (req.query.lineattribs ? Boolean(req.query.lineattribs) : false)
+				lineattribs: (req.query.lineattribs ? Boolean(req.query.lineattribs) : false),
+				regex: (req.query.regex ? Boolean(req.query.regex) : false),
+				
 		};
 		
 		
