@@ -17,7 +17,8 @@
     This DTD defines some element types for known EPL plug-ins. 
     If you use EPL plug-ins, which were not considered when
     defining this DTD, validation of exported XML may fail.
-    This is because unknown plug-ins might use EPL-attributes
+    This is because unknown plug-ins might use EPL-attributes,
+    that become XML attributes not declared in this DTD. 
     
     
 
