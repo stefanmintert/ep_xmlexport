@@ -1,7 +1,7 @@
 {
   "name": "ep_xmlexport",
   "description": "XML Export for Etherpad Lite",
-  "homepage": "https://github.com/edy/ep_xmlexport",
+  "homepage": "https://github.com/stefanmintert/ep_xmlexport",
   "keywords": [
     "etherpad",
     "xml",
@@ -9,8 +9,7 @@
   ],
   "author": {
     "name": "Stefan Mintert",
-    "email": "todo",
-    "url": "http://www.linkwerk.com"
+    "url": "http://www.linkwerk.com/"
   },
   "version": "1.0.1",
   "repository": {
