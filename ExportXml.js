@@ -97,7 +97,8 @@
 			      var STAY = 2;
 			      var LEAVE = 0;
 			      var taker = Changeset.stringIterator(line);
-
+			      var lmkrRemoved = false;
+			      
 			      var tags2close = [];
 			      var nextCharacters = "";
 			        
@@ -202,9 +203,10 @@
 			          
 			          var s = "";
 			          
-				      if (lmkr) {
+				      if (lmkr && !lmkrRemoved) {
 				    	s = taker.take(chars + 1);
 			          	s = s.substring(1);
+			          	lmkrRemoved = true;
 			          } else {
 			        	s = taker.take(chars);
 			          }
@@ -307,6 +309,7 @@
 		    if (lmkr) {
 		    	idx = 1;  // begin attribute processing after lmkr character
 		    }
+		    
 	      }
 	      
 	      /* TODO: URI detection should be re-worked to fit in XML structure
