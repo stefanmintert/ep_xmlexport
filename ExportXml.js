@@ -10,6 +10,26 @@
 	//var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
 	var DROPATTRIBUTES = []; 
 
+	
+	
+	
+    function getXmlStartTagForEplAttribute(apool, props, i) {
+  	  var startTag = '<attribute key="'
+		 				+ props[i]
+		 				+ '" value="'
+		 				+ apool.numToAttrib[i][1]
+		 				+ '">';
+  	  
+	     return startTag;
+    }
+
+    function getXmlEndTagForEplAttribute(i) {
+  	  return '</attribute>';
+    }
+	      
+    
+    
+	
 	var getPadXml = function (pad, reqOptions, callback) {
 	    var atext, xml;
 		var revNum = reqOptions.revision;
@@ -43,10 +63,6 @@
 
 
 	    function getLineXml(text, attribs, apool) {
-		      var propVals = [false, false, false];
-		      var ENTER = 1;
-		      var STAY = 2;
-		      var LEAVE = 0;
 		      var idx = 0;
 		      var lmkr = false;
 		      var lineAttributes = [];
@@ -55,26 +71,35 @@
 		      // <b>Just bold<b> <b><i>Bold and italics</i></b> <i>Just italics</i>
 		      // becomes
 		      // <b>Just bold <i>Bold and italics</i></b> <i>Just italics</i>
-		      var taker = Changeset.stringIterator(text);
 		      var assem = Changeset.stringAssembler();
 
 		      var openTags = [];
 		      var urls;
+		      var lineStartTag = '';
+		      var lineEndTag = '';
+
+		      
 		      
 		      if (reqOptions.regex) {
 		    	  urls = _findURLs(text);
 		      }
 		      
 		      /*
-		       * getText 
+		       * getXmlForLineSpan 
 		       * Gets text with length of 'numChars' starting from index 'fromIdx'.
 		       * Returns both, text with markup and plain text as literal object
 		       * { withMarkup: ..., plainText: ... } 
 		       *  
 		       */
-		      function getText(fromIdx, numChars) {
-			        var tags2close = [];
-			        var nextCharacters = "";
+		      function getXmlForLineSpan(line, fromIdx, numChars) {
+			      var propVals = [false, false, false];
+			      var ENTER = 1;
+			      var STAY = 2;
+			      var LEAVE = 0;
+			      var taker = Changeset.stringIterator(line);
+
+			      var tags2close = [];
+			      var nextCharacters = "";
 			        
 			        
 			        if (numChars <= 0) {
@@ -165,7 +190,7 @@
 			            {
 			              if (propVals[l] === ENTER || propVals[l] === STAY) {
 			            	  openTags.unshift(l);
-			            	  nextCharacters += getStartTag(apool, props, l);
+			            	  nextCharacters += getXmlStartTagForEplAttribute(apool, props, l);
 			            	  propVals[l] = true;
 			              }
 			            }
@@ -209,7 +234,7 @@
 			        	withMarkup: nextCharacters,
 			        	plainText:  s
 			        }
-			      } // end getText
+			      } // end getXmlForLineSpan
 
 		      
 		      
@@ -217,22 +242,6 @@
 		      
 		      
 
-		      function getStartTag(apool, props, i) {
-		    	  var startTag = '<attribute key="'
-				 				+ props[i]
-				 				+ '" value="'
-				 				+ apool.numToAttrib[i][1]
-				 				+ '">';
-		    	  
-			     return startTag;
-		      }
-
-		      function getEndTag(i) {
-		    	  return '</attribute>';
-		      }
-			      
-		      
-		      
 		      
 		      /*
 		       * getOrderedEndTags()
@@ -251,7 +260,7 @@
 			          for(var j=0;j<tags2close.length;j++) {
 			            if(tags2close[j] == openTags[i]) {
 					      openTags.shift();
-					      orderedEndTagsString += getEndTag(tags2close[j]); 
+					      orderedEndTagsString += getXmlEndTagForEplAttribute(tags2close[j]); 
 			              i--;
 			              break;
 			            }
@@ -274,7 +283,7 @@
 	    /*
 	     * anumMap maps the attribute numbers to their index in the props array.
 	     * This is legacy code. In our case both numbers should always be the same.
-	     * TODO: remove anumMap from the entire code.
+	     * TODO: do we need anumMap anylonger? if not, remove anumMap from the entire code.
 	     */
 	    props.forEach(function (propName, i) {
 		  if (DROPATTRIBUTES.indexOf(propName) < 0) { // Attribute shall be dropped
@@ -284,7 +293,6 @@
 
 	      if (reqOptions.lineattribs === true) {
 		    // start lineMarker (lmkr) check
-		    var deletedAsterisk = false; // do we need to delete * (lmkr, line marker) from the beginning of the line?
 		    var firstCharacterOfLineIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
 		
 		    if (firstCharacterOfLineIterator.hasNext()) {
@@ -315,41 +323,41 @@
 	          var startIndex = urlData[0];
 	          var url = urlData[1];
 	          var urlLength = url.length;
-	          assem.append(getText(idx, startIndex - idx).withMarkup);
+	          assem.append(getXmlForLineSpan(text, idx, startIndex - idx).withMarkup);
 	          idx += startIndex - idx;
 
-	          var uriText = getText(idx, urlLength);
+	          var uriText = getXmlForLineSpan(text, idx, urlLength);
 	          idx += urlLength;
 
 	          assem.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
 	        });
 	      }
 	      
-	      assem.append(getText(idx, text.length - idx).withMarkup);
+	      assem.append(getXmlForLineSpan(text, idx, text.length - idx).withMarkup);
 	      idx += text.length - idx;
 
 	        
-	        
+
 	      // replace &, _
 	      assem = assem.toString();
 	      assem = assem.replace(/\&/g, '\&amp;');
 	      
-	      var startTag = '<line';
-	      var endTag = '</line>';
+	      lineStartTag = '<line';
 	      
 	      if (lmkr) {
 	      	for (var i = 0; i < lineAttributes.length; i=i+1) {
-	      		startTag += ' ';
-	      		startTag += lineAttributes[i][0];
-	      		startTag += '="';
-	      		startTag += lineAttributes[i][1];
-	      		startTag += '"';    		
+	      		lineStartTag += ' ';
+	      		lineStartTag += lineAttributes[i][0];
+	      		lineStartTag += '="';
+	      		lineStartTag += lineAttributes[i][1];
+	      		lineStartTag += '"';    		
 	      	}
 	      }
-	      startTag += ">";
+	      lineStartTag += ">";
+	      lineEndTag = '</line>';
 	      
 
-	      return startTag + assem + endTag;
+	      return lineStartTag + assem + lineEndTag;
 	    } // end getLineXml
 
 	    
