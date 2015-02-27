@@ -101,7 +101,6 @@
 			      var tags2close = [];
 			      var nextCharacters = "";
 			        
-			        
 			        if (numChars <= 0) {
 			          return {
 				        	withMarkup: "",
@@ -184,7 +183,6 @@
 
 			            nextCharacters += getOrderedEndTags(tags2close);
 			            
-			            //orderdCloseTags(tags2close);
 			            
 			            for (var l = 0; l < propVals.length; l++)
 			            {
@@ -202,16 +200,15 @@
 			            chars--; // exclude newline at end of line, if present
 			          }
 			          
-			          var s = taker.take(chars);
+			          var s = "";
 			          
-			          //removes the characters with the code 12. Don't know where they come 
-			          //from but they break the abiword parser and are completly useless
-			          s = s.replace(String.fromCharCode(12), "");
-			          
-			          if (lmkr) {
+				      if (lmkr) {
+				    	s = taker.take(chars + 1);
 			          	s = s.substring(1);
+			          } else {
+			        	s = taker.take(chars);
 			          }
-			          
+				      
 			          nextCharacters += s;
 			        } // end iteration over spans in line
 			        
@@ -225,11 +222,8 @@
 			          }
 			        }
 			        
-			        //orderdCloseTags(tags2close);
-			        
 			        nextCharacters += getOrderedEndTags(tags2close);
 			        
-			        //return nextCharacters;
 			        return {
 			        	withMarkup: nextCharacters,
 			        	plainText:  s
