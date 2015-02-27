@@ -1,8 +1,6 @@
 # XML Export for Etherpad Lite
 
-This plug-in lets you export the content of a pad as XML. The details of the exported XML are still subject to change.
-
-WARNING: This is work in progress. Expect undocumented changes!
+This plug-in lets you export the content of a pad as XML. 
 
 
 ## Usage
