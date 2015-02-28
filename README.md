@@ -2,6 +2,13 @@
 
 This plug-in lets you export the content of a pad as XML. 
 
+## Download and Install
+
+Available on [github](https://github.com/stefanmintert/ep_xmlexport) and [npm](https://www.npmjs.com/package/ep_xmlexport)
+
+1. Install etherpad lite (EPL)
+2. cd to your EPL install direcory
+3. npm install ep_xmlexport
 
 ## Usage
 
@@ -20,21 +27,21 @@ TODO: Make the default configurable.
 
 ### Request URIs
 
-####Basic call, requesting generic EPL XML
+#### Basic call, requesting generic EPL XML
 
     http://<hostPort>/p/<padName>/export/xml
 
-####Choose pad revision, requesting generic EPL XML
+#### Choose pad revision, requesting generic EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml
 
-####Control output of line attributes (handling of EPL line marker, lmkr), requesting extented EPL XML
+#### Control output of line attributes (handling of EPL line marker, lmkr), requesting extented EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lineattribs=true
 
 Removes the line marker (asterisk with attribute lmkr) from a line and adds all lmkr attributes as XML attributes to the `line` element. `key`/`value` become the name/value of the correpsonding line attribute.  
 
-####Control output of lists markup, requesting extented EPL XML
+#### Control output of lists markup, requesting extented EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lists=true
 
@@ -46,11 +53,11 @@ Generates `list` and `item` elements.
 
 Currently the MIME type `plain/xml` is used. A switch to `application/xml` might be reasonable. 
 
-Little is known about dealing with the correct encoding (BOM, XML declaration, HTTP header) in EPL. If you think I'm doing wrong, let me know (fork & PR appreciated).
+Little is known about dealing with the correct encoding ([BOM, XML declaration, HTTP header](http://www.w3.org/TR/REC-xml/#charencoding)) in EPL. If you think I'm doing wrong, let me know (fork & PR appreciated).
 
 #### Message body
 
-The plug-in produces well-formed XML.
+The plug-in produces [well-formed XML](http://www.w3.org/TR/REC-xml/#sec-well-formed).
 
 You have the choice of exporting *generic EPL XML* or *extended EPL XML* (non-generic). What does this mean?
 
