@@ -77,7 +77,6 @@
 
 
 	    function getLineXml(text, attribs, apool) {
-		      var idx = 0;
 		      var lmkr = false;
 		      var lineAttributes = [];
 		      // Use order of tags (b/i/u) as order of nesting, for simplicity
@@ -111,7 +110,6 @@
 			      var ENTER = 1;
 			      var STAY = 2;
 			      var LEAVE = 0;
-			      var lmkrRemoved = false;
 			      var s;
 			      
 			      var tags2close = [];
@@ -219,15 +217,7 @@
 			            chars--; // exclude newline at end of line, if present
 			          }
 			          
-			          s = "";
-			          
-				      if (lmkr && !lmkrRemoved) {
-				    	s = lineIterator.take(chars + 1);
-			          	s = s.substring(1);
-			          	lmkrRemoved = true;
-			          } else {
-			        	s = lineIterator.take(chars);
-			          }
+			          s = lineIterator.take(chars);
 				      
 			          nextCharacters += s;
 			          nextPlainCharacters += s;
@@ -326,7 +316,7 @@
 	      
 		    
 		    if (lmkr) {
-		    	idx = 1;  // begin attribute processing after lmkr character
+		    	textIterator.skip(1); // begin attribute processing after lmkr character
 		    }
 		    
 	      }
@@ -341,18 +331,17 @@
 	          var urlLength = url.length;
 	          
 	          
-	          assem.append(getXmlForLineSpan(textIterator, text.length, startIndex - idx).withMarkup);
-	          idx += startIndex - idx;
+	          assem.append(getXmlForLineSpan(textIterator, text.length, startIndex - getIteratorIndex(textIterator, text.length)).withMarkup);
 
 	          var uriText = getXmlForLineSpan(textIterator, text.length, urlLength);
-	          idx += urlLength;
 
 	          assem.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
 	        });
 	      }
 	      
-	      assem.append(getXmlForLineSpan(textIterator, text.length, text.length - idx).withMarkup);
-	      idx += text.length - idx;
+	      
+	      
+	      assem.append(getXmlForLineSpan(textIterator, text.length, textIterator.remaining()).withMarkup);
 
 	        
 
