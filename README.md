@@ -18,7 +18,7 @@ You can use the plug-in via a graphical UI or via HTTP API calls.
 
 The plug-in adds itself to the list of export formats. Choose `XML` from list of formats. 
 
-You can't control the XML output format using the GUI. If you need something different from the default XML, use the HTTP API instead.
+You can't control the XML output format using the GUI. If you need something different than the default XML, use the HTTP API instead.
 
 TODO: Make the default configurable. 
 
@@ -35,17 +35,27 @@ TODO: Make the default configurable.
 
     http://<hostPort>/p/<padName>/<revision>/export/xml
 
-#### Control output of line attributes (handling of EPL line marker, lmkr), requesting extented EPL XML
+#### Control output of line attributes (handling of EPL line marker, lmkr), requesting extended EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lineattribs=true
 
 Removes the line marker (asterisk with attribute lmkr) from a line and adds all lmkr attributes as XML attributes to the `line` element. `key`/`value` become the name/value of the correpsonding line attribute.  
 
-#### Control output of lists markup, requesting extented EPL XML
+#### Control output of lists markup, requesting extended EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lists=true
 
 Generates `list` and `item` elements. 
+
+#### Regex matching of URIs, requesting extended EPL XML
+
+    http://<hostPort>/p/<padName>/<revision>/export/xml?regex=true
+
+Generates markup for [URIs](http://www.ietf.org/rfc/rfc3986.txt). This feature is implemented because the original code, which this plug-in relies on, does a regex search for URIs; so I just kept this feature.
+
+But the markup is generalized. For every URI in the pad text you'll get the following markup on export: `<matched-text key="uri" value="...">...</markup-text`. 
+
+The generalized markup allows for an easy, later extension to match more patterns. 
 
 ### Response
 
