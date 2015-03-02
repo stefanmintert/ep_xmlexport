@@ -23,7 +23,7 @@
 	     return startTag;
     }
 
-    function getXmlEndTagForEplAttribute(i) {
+    function getXmlEndTagForEplAttribute(apool, props, i) {
   	  return '</attribute>';
     }
 	      
@@ -42,15 +42,17 @@
 		        } else {
 		        	atext = revisionAtext;
 		        }
-		      }
-	          );
+
+		        xml = getXmlFromAtext(pad, atext, reqOptions);
+			    callback(null, xml);
+		      });
 	    } else {
 		  atext = pad.atext;
-	    }
+		  xml = getXmlFromAtext(pad, atext, reqOptions);
+		  callback(null, xml);
+		}
 	    
-	    xml = getXmlFromAtext(pad, atext, reqOptions);
-
-	    callback(null, xml);
+	    
 	};
 
 	var getXmlFromAtext = function (pad, atext, reqOptions) {
@@ -256,7 +258,7 @@
 			          for(var j=0;j<tags2close.length;j++) {
 			            if(tags2close[j] == openTags[i]) {
 					      openTags.shift();
-					      orderedEndTagsString += getXmlEndTagForEplAttribute(tags2close[j]); 
+					      orderedEndTagsString += getXmlEndTagForEplAttribute(apool, props, tags2close[j]); 
 			              i--;
 			              break;
 			            }
