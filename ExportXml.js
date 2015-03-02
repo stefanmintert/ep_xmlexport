@@ -60,7 +60,6 @@
 	 * This function calculates the index from the original string length
 	 * and the remaining number of characters.
 	 * 
-	 * Can we add as iterator method this with prototype?
 	 */
 	var getIteratorIndex = function(stringIterator, stringLength) {
 		return (stringLength - stringIterator.remaining());
@@ -298,13 +297,13 @@
 
 	      if (reqOptions.lineattribs === true) {
 		    // start lineMarker (lmkr) check
-		    var firstCharacterOfLineIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
+		    var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
 		
-		    if (firstCharacterOfLineIterator.hasNext()) {
-		      var o2 = firstCharacterOfLineIterator.next();
+		    if (firstCharacterOfLineOpIterator.hasNext()) {
+		      var singleOperation = firstCharacterOfLineOpIterator.next();
 		      
 		      // iterate through attributes
-		      Changeset.eachAttribNumber(o2.attribs, function (a) {		    
+		      Changeset.eachAttribNumber(singleOperation.attribs, function (a) {		    
 			    lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
 		
 			    if (apool.numToAttrib[a][0] === "lmkr") {
@@ -321,8 +320,8 @@
 		    
 	      }
 	      
-	      /* TODO: URI detection should be re-worked to fit in XML structure
-	       * 
+	      /* 
+	       * Process URIs
 	       */
 	      if (urls) {
 	        urls.forEach(function (urlData) {
@@ -474,6 +473,16 @@
 	    return line;
 	};
 	
+	
+	
+	/*
+	 * getPadXmlDocument
+	 * Get a well-formed XML Document for a given pad.
+	 * 
+	 * Wraps the line by line XML representing the pad content 
+	 * in a root element and prepends an XML declaration
+	 * 
+	 */
 	var getPadXmlDocument = function(padId, reqOptions, callback) {
 		
 		  padManager.getPad(padId, function (err, pad)
