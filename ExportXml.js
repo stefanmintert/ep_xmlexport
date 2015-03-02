@@ -54,7 +54,19 @@
 	    
 	    
 	};
+	
+	/*
+	 * Unfortunately Changeset.stringIterator does not reveal it's current index.
+	 * This function calculates the index from the original string length
+	 * and the remaining number of characters.
+	 * 
+	 * Can we add as iterator method this with prototype?
+	 */
+	var getIteratorIndex = function(stringIterator, stringLength) {
+		return (stringLength - stringIterator.remaining());
+	}
 
+	
 	var getXmlFromAtext = function (pad, atext, reqOptions) {
 	    var apool = pad.pool;
 	    var textLines = atext.text.slice(0, -1).split('\n');
@@ -79,6 +91,7 @@
 		      var urls;
 		      var lineStartTag = '';
 		      var lineEndTag = '';
+		      var textIterator = Changeset.stringIterator(text);
 
 		      
 		      
@@ -93,17 +106,20 @@
 		       * { withMarkup: ..., plainText: ... } 
 		       *  
 		       */
-		      function getXmlForLineSpan(line, fromIdx, numChars) {
+		      function getXmlForLineSpan(lineIterator, maxIdx, numChars) {
 			      var propVals = [false, false, false];
 			      var ENTER = 1;
 			      var STAY = 2;
 			      var LEAVE = 0;
-			      var taker = Changeset.stringIterator(line);
 			      var lmkrRemoved = false;
+			      var s;
 			      
 			      var tags2close = [];
 			      var nextCharacters = "";
-			        
+			      var nextPlainCharacters = "";
+			      
+			      var fromIdx = getIteratorIndex(lineIterator, maxIdx); 
+			      			        
 			        if (numChars <= 0) {
 			          return {
 				        	withMarkup: "",
@@ -203,17 +219,18 @@
 			            chars--; // exclude newline at end of line, if present
 			          }
 			          
-			          var s = "";
+			          s = "";
 			          
 				      if (lmkr && !lmkrRemoved) {
-				    	s = taker.take(chars + 1);
+				    	s = lineIterator.take(chars + 1);
 			          	s = s.substring(1);
 			          	lmkrRemoved = true;
 			          } else {
-			        	s = taker.take(chars);
+			        	s = lineIterator.take(chars);
 			          }
 				      
 			          nextCharacters += s;
+			          nextPlainCharacters += s;
 			        } // end iteration over spans in line
 			        
 			        tags2close = [];
@@ -230,7 +247,7 @@
 			        
 			        return {
 			        	withMarkup: nextCharacters,
-			        	plainText:  s
+			        	plainText:  nextPlainCharacters
 			        }
 			      } // end getXmlForLineSpan
 
@@ -322,17 +339,19 @@
 	          var startIndex = urlData[0];
 	          var url = urlData[1];
 	          var urlLength = url.length;
-	          assem.append(getXmlForLineSpan(text, idx, startIndex - idx).withMarkup);
+	          
+	          
+	          assem.append(getXmlForLineSpan(textIterator, text.length, startIndex - idx).withMarkup);
 	          idx += startIndex - idx;
 
-	          var uriText = getXmlForLineSpan(text, idx, urlLength);
+	          var uriText = getXmlForLineSpan(textIterator, text.length, urlLength);
 	          idx += urlLength;
 
 	          assem.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
 	        });
 	      }
 	      
-	      assem.append(getXmlForLineSpan(text, idx, text.length - idx).withMarkup);
+	      assem.append(getXmlForLineSpan(textIterator, text.length, text.length - idx).withMarkup);
 	      idx += text.length - idx;
 
 	        
