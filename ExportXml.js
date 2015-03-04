@@ -11,7 +11,10 @@
 	var DROPATTRIBUTES = []; 
 
 	
-	
+	function myLog(title, msg) {
+		console.log("############################");
+		console.log(title + ":  " + JSON.stringify(msg));
+	}		
 	
     function getXmlStartTagForEplAttribute(apool, props, i) {
   	  var startTag = '<attribute key="'
@@ -24,7 +27,7 @@
     }
 
     function getXmlEndTagForEplAttribute(apool, props, i) {
-  	  return '</attribute>';
+  	  return '</attribute><!-- /' + props[i] + ' -->';
     }
 	      
     
@@ -128,74 +131,105 @@
 
 			        while (iter.hasNext())
 			        {
-			          var o = iter.next();
+			          var o = iter.next();			          
 			          var propChanged = false;
-			          Changeset.eachAttribNumber(o.attribs, function (a)
-			          {
+			          Changeset.eachAttribNumber(o.attribs, function (a) {
+			        	  
+			        	  
+			        	myLog("+++++++++++++++++++++++anumMap", anumMap);  
 			            if (a in anumMap)
 			            {
 			              var i = anumMap[a]; // i = 0 => bold, etc.
+				            myLog("i", i);
 			              if (!propVals[i])
 			              {
 			                propVals[i] = ENTER;
 			                propChanged = true;
+				            myLog("SET ENTER apool.numToAttrib[i][0]", apool.numToAttrib[i][0]);
 			              }
 			              else
 			              {
 			                propVals[i] = STAY;
+				            myLog("SET STAY apool.numToAttrib[i][0]", apool.numToAttrib[i][0]);
 			              }
 			            }
 			          });
+
+			          
+			          
+			        	myLog("+++++++++++++++++++++++setPropVals", true);  
+			          
 			          for (var j = 0; j < propVals.length; j++) {
+				            myLog("j", j);
 			            if (propVals[j] === true)
 			            {
 			              propVals[j] = LEAVE;
 			              propChanged = true;
+				            myLog("SET LEAVE apool.numToAttrib[j][0]", apool.numToAttrib[j][0]);
 			            }
 			            else if (propVals[j] === STAY)
 			            {
 			              propVals[j] = true; // set it back
+				            myLog("SET TRUE apool.numToAttrib[j][0]", apool.numToAttrib[j][0]);
 			            }
 			          }
+			        	myLog("propVals", propVals);  
 
 			          // now each member of propVal is in {false,LEAVE,ENTER,true}
 			          // according to what happens at start of span
-			          if (propChanged)
-			          {
+			          if (propChanged) {
+			        	myLog("propChanged", propChanged);
 			            // leaving bold (e.g.) also leaves italics, etc.
 			            var left = false;
-			            for (var i = 0; i < propVals.length; i++)
-			            {
+			            
+			            // check if ANY prop has to be left
+			            for (var i = 0; i < propVals.length; i++) {
 			              var v = propVals[i];
-			              if (!left)
-			              {
-			                if (v === LEAVE)
-			                {
+			              if (!left) {
+			                if (v === LEAVE) {
 			                  left = true;
 			                }
 			              }
-			              else
-			              {
-			                if (v === true)
-			                {
-			                  propVals[i] = STAY; // tag will be closed and re-opened
-			                }
-			              }
+			            }
+
+			            for (var i = 0; i < propVals.length; i++)
+			            {
+				            myLog("i 2", i);
+			              var v = propVals[i];
+				            myLog("v", v);
+				            if (left) {
+				            	if (v === true) {
+				                  propVals[i] = STAY; // tag will be closed and re-opened
+						            myLog("SET STAY C/RO apool.numToAttrib[i][0]", apool.numToAttrib[i][0]);
+				                }
+				            }
 			            }
 
 			            tags2close = [];
 
+			        	myLog("+++++++++++++++++++++++closeTags", tags2close);  
+
 			            for (var k = propVals.length - 1; k >= 0; k--) {
+				            myLog("k", k);
+			            	
 			              if (propVals[k] === LEAVE)
 			              {
 			                tags2close.push(k);
 			                propVals[k] = false;
+				            myLog("LEAVE apool.numToAttrib[k][0]", apool.numToAttrib[k][0]);
 			              }
 			              else if (propVals[k] === STAY)
 			              {
 			                tags2close.push(k);
+				            myLog("STAY apool.numToAttrib[k][0]", apool.numToAttrib[k][0]);
+			              } else {
+					        myLog("propVals[k]", propVals[k]);
+				            myLog("NOP", apool.numToAttrib[k][0]);
+			            	  
 			              }
+			            	  
 			            }
+			        	myLog("tags2close", tags2close);  
 
 			            nextCharacters += getOrderedEndTags(tags2close);
 			            
@@ -220,6 +254,8 @@
 				      
 			          nextCharacters += s;
 			          nextPlainCharacters += s;
+			          
+
 			        } // end iteration over spans in line
 			        
 			        tags2close = [];
@@ -229,6 +265,7 @@
 			          {
 			            tags2close.push(n);
 			            propVals[n] = false;
+			            myLog("FINAL apool.numToAttrib[k][0]", apool.numToAttrib[k][0]);
 			          }
 			        }
 			        
