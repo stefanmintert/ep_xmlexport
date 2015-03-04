@@ -76,297 +76,277 @@
 
 
 	    function getLineXml(text, attribs, apool) {
-		      var lmkr = false;
-		      var lineAttributes = [];
-		      // Use order of tags (b/i/u) as order of nesting, for simplicity
-		      // and decent nesting.  For example,
-		      // <b>Just bold<b> <b><i>Bold and italics</i></b> <i>Just italics</i>
-		      // becomes
-		      // <b>Just bold <i>Bold and italics</i></b> <i>Just italics</i>
-		      var xmlStringAssembler = Changeset.stringAssembler();
+                var lmkr = false;
+                var lineAttributes = [];
+                // Use order of tags (b/i/u) as order of nesting, for simplicity
+                // and decent nesting.  For example,
+                // <b>Just bold<b> <b><i>Bold and italics</i></b> <i>Just italics</i>
+                // becomes
+                // <b>Just bold <i>Bold and italics</i></b> <i>Just italics</i>
+                var xmlStringAssembler = Changeset.stringAssembler();
 
-		      var openTags = [];
-		      var urls;
-		      var textIterator = Changeset.stringIterator(text);
+                var openTags = [];
+                var urls;
+                var textIterator = Changeset.stringIterator(text);
 
-		      /*
-		       * getXmlForLineSpan 
-		       * Gets text with length of 'numChars' starting from index 'fromIdx'.
-		       * Returns both, text with markup and plain text as literal object
-		       * { withMarkup: ..., plainText: ... } 
-		       *  
-		       */
-		      function getXmlForLineSpan(lineIterator, maxIdx, numChars) {
-			      var propVals = [false, false, false];
-			      var ENTER = 1;
-			      var STAY = 2;
-			      var LEAVE = 0;
-			      
-			      var tags2close = [];
-			      var nextCharacters = "";
-			      var nextPlainCharacters = "";
-			      
-			      var fromIdx = getIteratorIndex(lineIterator, maxIdx); 
-			      			        
-			        if (numChars <= 0) {
-			          return {
-				        	withMarkup: "",
-				        	plainText:  ""
-				        };
-			        }
+                /*
+                 * getXmlForLineSpan 
+                 * Gets text with length of 'numChars' starting from index 'fromIdx'.
+                 * Returns both, text with markup and plain text as literal object
+                 * { withMarkup: ..., plainText: ... } 
+                 *  
+                 */
+                function getXmlForLineSpan(lineIterator, lineLength, numChars) {
+                    var propVals = [false, false, false];
+                    var ENTER = 1;
+                    var STAY = 2;
+                    var LEAVE = 0;
 
-			        var opIterator = Changeset.opIterator(Changeset.subattribution(attribs, fromIdx, fromIdx + numChars));
-                                
-                                
-                                var handleOp = function(op) {
-                                    var propChanged = false;
-                                    Changeset.eachAttribNumber(op.attribs, function (a)
-                                    {
-                                      if (a in anumMap)
-                                      {
-                                        var i = anumMap[a]; // i = 0 => bold, etc.
-                                        if (!propVals[i])
-                                        {
-                                          propVals[i] = ENTER;
-                                          propChanged = true;
-                                        }
-                                        else
-                                        {
-                                          propVals[i] = STAY;
-                                        }
-                                      }
-                                    });
-                                    for (var j = 0; j < propVals.length; j++) {
-                                      if (propVals[j] === true)
-                                      {
-                                        propVals[j] = LEAVE;
-                                        propChanged = true;
-                                      }
-                                      else if (propVals[j] === STAY)
-                                      {
-                                        propVals[j] = true; // set it back
-                                      }
-                                    }
+                    var tags2close = [];
+                    var nextCharacters = "";
+                    var nextPlainCharacters = "";
 
-                                    // now each member of propVal is in {false,LEAVE,ENTER,true}
-                                    // according to what happens at start of span
-                                    if (propChanged)
-                                    {
-                                      // leaving bold (e.g.) also leaves italics, etc.
-                                      var left = false;
-                                      for (var i = 0; i < propVals.length; i++)
-                                      {
-                                        var v = propVals[i];
-                                        if (!left)
-                                        {
-                                          if (v === LEAVE)
-                                          {
-                                            left = true;
-                                          }
-                                        }
-                                        else
-                                        {
-                                          if (v === true)
-                                          {
-                                            propVals[i] = STAY; // tag will be closed and re-opened
-                                          }
-                                        }
-                                      }
+                    var fromIdx = getIteratorIndex(lineIterator, lineLength); 
 
-                                      tags2close = [];
+                    console.log("================= getXmlForLineSpan: FromIdx: " + fromIdx + "; length: "+ numChars);
 
-                                      for (var k = propVals.length - 1; k >= 0; k--) {
-                                        if (propVals[k] === LEAVE)
-                                        {
-                                          tags2close.push(k);
-                                          propVals[k] = false;
-                                        }
-                                        else if (propVals[k] === STAY)
-                                        {
-                                          tags2close.push(k);
-                                        }
-                                      }
+                    if (numChars <= 0) {
+                        return {
+                            withMarkup: "",
+                            plainText:  ""
+                        };
+                    }
 
-                                      nextCharacters += getOrderedEndTags(tags2close);
+                    var opIterator = Changeset.opIterator(Changeset.subattribution(attribs, fromIdx, fromIdx + numChars));
 
 
-                                      for (var l = 0; l < propVals.length; l++)
-                                      {
-                                        if (propVals[l] === ENTER || propVals[l] === STAY) {
-                                            openTags.unshift(l);
-                                            nextCharacters += getXmlStartTagForEplAttribute(apool, props, l);
-                                            propVals[l] = true;
-                                        }
-                                      }
-                                      // propVals is now all {true,false} again
-                                    } // end if (propChanged)
-                                    var chars = op.chars;
-                                    if (op.lines)
-                                    {
-                                      chars--; // exclude newline at end of line, if present
-                                    }
+                    var handleOp = function(op) {
+                        var propChanged = false;
+                        Changeset.eachAttribNumber(op.attribs, function (a) {
+                          if (a in anumMap) {
+                            var i = anumMap[a]; // i = 0 => bold, etc.
+                            if (!propVals[i]) {
+                              propVals[i] = ENTER;
+                              propChanged = true;
+                            } else {
+                              propVals[i] = STAY;
+                            }
+                          }
+                        });
+                        for (var j = 0; j < propVals.length; j++) {
+                          if (propVals[j] === true) {
+                            propVals[j] = LEAVE;
+                            propChanged = true;
+                          } else if (propVals[j] === STAY) {
+                            propVals[j] = true; // set it back
+                          }
+                        }
 
-                                    var s = lineIterator.take(chars);
+                        // now each member of propVal is in {false,LEAVE,ENTER,true}
+                        // according to what happens at start of span
+                        if (propChanged) {
+                          // leaving bold (e.g.) also leaves italics, etc.
+                          var left = false;
+                          for (var i = 0; i < propVals.length; i++) {
+                            var v = propVals[i];
+                            if (!left) {
+                              if (v === LEAVE) {
+                                left = true;
+                              }
+                            } else {
+                              if (v === true) {
+                                propVals[i] = STAY; // tag will be closed and re-opened
+                              }
+                            }
+                          }
 
-                                    nextCharacters += s;
-                                    nextPlainCharacters += s;
-                                };
+                          tags2close = [];
 
-			        while (opIterator.hasNext())
-			        {
-			          var currentOp = opIterator.next();
-			          handleOp(currentOp);
-			        } // end iteration over spans in line
-			        
-			        tags2close = [];
-			        for (var n = propVals.length - 1; n >= 0; n--)
-			        {
-			          if (propVals[n])
-			          {
-			            tags2close.push(n);
-			            propVals[n] = false;
-			          }
-			        }
-			        
-			        nextCharacters += getOrderedEndTags(tags2close);
-			        
-			        return {
-			        	withMarkup: nextCharacters,
-			        	plainText:  nextPlainCharacters
-			        }
-			      } // end getXmlForLineSpan
+                          for (var k = propVals.length - 1; k >= 0; k--) {
+                            if (propVals[k] === LEAVE) {
+                              tags2close.push(k);
+                              propVals[k] = false;
+                            } else if (propVals[k] === STAY) {
+                              tags2close.push(k);
+                            }
+                          }
 
-		      
-		      
-		      
-		      
-		      
+                          nextCharacters += getOrderedEndTags(tags2close);
 
-		      
-		      /*
-		       * getOrderedEndTags()
-		       * 
-		       * Get all end-tags for all open elements in the current line.
-		       * The function keeps the proper order of opened elements.
-		       * (Which might be required if we should switch to different
-		       * element types in the future; as long as everything is
-		       * <attribute>, order doesn't matter)
-		       * 
-		       */
-		      function getOrderedEndTags(tags2close) {
-		    	  var orderedEndTagsString = "";
-		    	  
-			        for(var i=0;i<openTags.length;i++) {
-			          for(var j=0;j<tags2close.length;j++) {
-			            if(tags2close[j] == openTags[i]) {
-					      openTags.shift();
-					      orderedEndTagsString += getXmlEndTagForEplAttribute(apool, props, tags2close[j]); 
-			              i--;
-			              break;
-			            }
-			          }
-			        }
-				      return orderedEndTagsString;
-			      }
+
+                          for (var l = 0; l < propVals.length; l++) {
+                            if (propVals[l] === ENTER || propVals[l] === STAY) {
+                                openTags.unshift(l);
+                                nextCharacters += getXmlStartTagForEplAttribute(apool, props, l);
+                                propVals[l] = true;
+                            }
+                          }
+                          // propVals is now all {true,false} again
+                        } // end if (propChanged)
+                        var chars = op.chars;
+                        if (op.lines) {
+                          chars--; // exclude newline at end of line, if present
+                        }
+
+                        var s = lineIterator.take(chars);
+
+                        nextCharacters += s;
+                        nextPlainCharacters += s;
+                    };
+
+                    console.log("Status propVals: " + JSON.stringify(propVals) + "; tags2close: " + JSON.stringify(tags2close) + ";"
+                            + " nextCharacters: " + nextCharacters + "; nextPlainCharacters: " + nextPlainCharacters);
+
+                    while (opIterator.hasNext()) {
+                      var currentOp = opIterator.next();
+                      handleOp(currentOp);
+
+                      console.log("Status propVals: " + JSON.stringify(propVals) + "; tags2close: " + JSON.stringify(tags2close) + ";");
+                      console.log("nextCharacters: " + nextCharacters + "; nextPlainCharacters: " + nextPlainCharacters);
+                    } // end iteration over spans in line
+
+                    tags2close = [];
+                    for (var n = propVals.length - 1; n >= 0; n--) {
+                      if (propVals[n]) {
+                        tags2close.push(n);
+                        propVals[n] = false;
+                      }
+                    }
+
+                    nextCharacters += getOrderedEndTags(tags2close);
+
+                    console.log("================= getXmlForLineSpan: Return withMarkup: " + nextCharacters + "; plainText: "+ nextPlainCharacters);
+
+                    return {
+                        withMarkup: nextCharacters,
+                        plainText:  nextPlainCharacters
+                    }
+                } // end getXmlForLineSpan
+
+                /*
+                 * getOrderedEndTags()
+                 * 
+                 * Get all end-tags for all open elements in the current line.
+                 * The function keeps the proper order of opened elements.
+                 * (Which might be required if we should switch to different
+                 * element types in the future; as long as everything is
+                 * <attribute>, order doesn't matter)
+                 * 
+                 */
+                function getOrderedEndTags(tags2close) {
+                    var orderedEndTagsString = "";
+
+                          for(var i=0;i<openTags.length;i++) {
+                            for(var j=0;j<tags2close.length;j++) {
+                              if(tags2close[j] == openTags[i]) {
+                                        openTags.shift();
+                                        orderedEndTagsString += getXmlEndTagForEplAttribute(apool, props, tags2close[j]); 
+                                i--;
+                                break;
+                              }
+                            }
+                          }
+                                return orderedEndTagsString;
+                        }
 		      
 	    
-	    /*
-	     * Collect all property names (=attribute names) which are used in apool
-	     */
-	    
-	    for (var propName in apool.numToAttrib) {
-		  if (apool.numToAttrib.hasOwnProperty(propName)) {
-			  props.push(apool.numToAttrib[propName][0]);
-		  }
-	    }  
+                /*
+                 * Collect all property names (=attribute names) which are used in apool
+                 */
 
-	    /*
-	     * anumMap maps the attribute numbers to their index in the props array.
-	     * This is legacy code. In our case both numbers should always be the same.
-	     * TODO: do we need anumMap anylonger? if not, remove anumMap from the entire code.
-	     */
-	    props.forEach(function (propName, i) {
-		  if (DROPATTRIBUTES.indexOf(propName) < 0) { // Attribute shall be dropped
-			  anumMap[i] = i;
-		  }
-	    });
+                for (var propName in apool.numToAttrib) {
+                    if (apool.numToAttrib.hasOwnProperty(propName)) {
+                        props.push(apool.numToAttrib[propName][0]);
+                    }
+                }  
 
-	      if (reqOptions.lineattribs === true) {
-		    // start lineMarker (lmkr) check
-		    var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
-		
-		    if (firstCharacterOfLineOpIterator.hasNext()) {
-		      var singleOperation = firstCharacterOfLineOpIterator.next();
-		      
-		      // iterate through attributes
-		      Changeset.eachAttribNumber(singleOperation.attribs, function (a) {		    
-			    lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
-		
-			    if (apool.numToAttrib[a][0] === "lmkr") {
-		    		lmkr = true;
-		    	}
-		      });
-		    }    
-	      
-	      
-		    
-		    if (lmkr) {
-		    	textIterator.skip(1); // begin attribute processing after lmkr character
-		    }
-		    
-	      }
-	      
-	      /* 
-	       * Process URIs
-	       */
-              if (reqOptions.regex) {
-                urls = _findURLs(text);
-              }
-                      
-	      if (urls) {
-	        urls.forEach(function (urlData) {
-	          var startIndex = urlData[0];
-	          var url = urlData[1];
-	          var urlLength = url.length;
-	          
-	          
-	          xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, startIndex - getIteratorIndex(textIterator, text.length)).withMarkup);
+                /*
+                 * anumMap maps the attribute numbers to their index in the props array.
+                 * This is legacy code. In our case both numbers should always be the same.
+                 * TODO: do we need anumMap anylonger? if not, remove anumMap from the entire code.
+                 */
+                props.forEach(function (propName, i) {
+                      if (DROPATTRIBUTES.indexOf(propName) < 0) { // Attribute shall be dropped
+                              anumMap[i] = i;
+                      }
+                });
 
-	          var uriText = getXmlForLineSpan(textIterator, text.length, urlLength);
+                if (reqOptions.lineattribs === true) {
+                      // start lineMarker (lmkr) check
+                      var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
 
-	          xmlStringAssembler.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
-	        });
-	      }
-	      
-	      
-	      
-	      xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, textIterator.remaining()).withMarkup);
+                      if (firstCharacterOfLineOpIterator.hasNext()) {
+                        var singleOperation = firstCharacterOfLineOpIterator.next();
 
-	        
+                        // iterate through attributes
+                        Changeset.eachAttribNumber(singleOperation.attribs, function (a) {		    
+                              lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
 
-	      // replace &, _
-	      var lineContentString = xmlStringAssembler.toString().replace(/\&/g, '\&amp;');
-              
-              var createLineElement = function(lineAttributes, lineContentString, lmkr) {
-                var lineStartTag = '<line';
-	      
-                if (lmkr) {
-                  for (var i = 0; i < lineAttributes.length; i=i+1) {
-                          lineStartTag += ' ';
-                          lineStartTag += lineAttributes[i][0];
-                          lineStartTag += '="';
-                          lineStartTag += lineAttributes[i][1];
-                          lineStartTag += '"';    		
-                  }
+                              if (apool.numToAttrib[a][0] === "lmkr") {
+                                  lmkr = true;
+                          }
+                        });
+                      }    
+
+
+
+                      if (lmkr) {
+                          textIterator.skip(1); // begin attribute processing after lmkr character
+                      }
+
                 }
-                lineStartTag += ">";
-                var lineEndTag = '</line>';
+
+                /* 
+                 * Process URIs
+                 */
+                if (reqOptions.regex) {
+                  urls = _findURLs(text);
+                }
+
+                if (urls) {
+                  urls.forEach(function (urlData) {
+                    var startIndex = urlData[0];
+                    var url = urlData[1];
+                    var urlLength = url.length;
 
 
-                return lineStartTag + lineContentString + lineEndTag;
-              };
+                    xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, startIndex - getIteratorIndex(textIterator, text.length)).withMarkup);
+
+                    var uriText = getXmlForLineSpan(textIterator, text.length, urlLength);
+
+                    xmlStringAssembler.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
+                  });
+                }
+	      
+	      
+	      
+                xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, textIterator.remaining()).withMarkup);
+
+
+
+                // replace &, _
+                var lineContentString = xmlStringAssembler.toString().replace(/\&/g, '\&amp;');
+
+                var createLineElement = function(lineAttributes, lineContentString, lmkr) {
+                  var lineStartTag = '<line';
+
+                  if (lmkr) {
+                    for (var i = 0; i < lineAttributes.length; i=i+1) {
+                            lineStartTag += ' ';
+                            lineStartTag += lineAttributes[i][0];
+                            lineStartTag += '="';
+                            lineStartTag += lineAttributes[i][1];
+                            lineStartTag += '"';    		
+                    }
+                  }
+                  lineStartTag += ">";
+                  var lineEndTag = '</line>';
+
+
+                  return lineStartTag + lineContentString + lineEndTag;
+                };
               
-              return createLineElement(lineAttributes, lineContentString, lmkr);
+                return createLineElement(lineAttributes, lineContentString, lmkr);
 	      
 	      
 	    } // end getLineXml
