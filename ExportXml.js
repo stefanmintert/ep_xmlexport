@@ -154,16 +154,24 @@
                     if (propChanged) {
                       // leaving bold (e.g.) also leaves italics, etc.
                       var left = false;
+                      
+                      // check if ANY prop has to be left
                       for (var i = 0; i < propVals.length; i++) {
                         var v = propVals[i];
                         if (!left) {
                           if (v === LEAVE) {
                             left = true;
                           }
-                        } else {
-                          if (v === true) {
-                            propVals[i] = STAY; // tag will be closed and re-opened
-                          }
+                        }
+                      }
+                      
+                      // if any prop was left, close and re-open the others that are active (value 'true')
+                      if (left) {
+                        for (var i = 0; i < propVals.length; i++) {
+                            var v = propVals[i];
+                            if (v === true) {
+                                propVals[i] = STAY; // tag will be closed and re-opened
+                            }
                         }
                       }
 
