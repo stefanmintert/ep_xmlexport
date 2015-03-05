@@ -114,9 +114,6 @@
 
                 var fromIdx = getIteratorIndex(lineIterator, lineLength); 
 
-                console.log("================= getXmlForLineSpan: FromIdx: " + fromIdx + "; length: "+ numChars);
-                console.log("Props: " + JSON.stringify(props));
-
                 if (numChars <= 0) {
                     return {
                         withMarkup: "",
@@ -209,16 +206,9 @@
                     nextPlainCharacters += s;
                 };
 
-                console.log("Status propVals: " + JSON.stringify(propVals) + "; tags2close: " + JSON.stringify(tags2close) + ";"
-                        + " nextCharacters: " + nextCharacters + "; nextPlainCharacters: " + nextPlainCharacters);
-
                 while (opIterator.hasNext()) {
                   var currentOp = opIterator.next();
                   handleOp(currentOp);
-
-                  console.log("Status propVals: " + JSON.stringify(propVals) + "; tags2close: " + JSON.stringify(tags2close) + ";");
-                  console.log("nextCharacters: " + nextCharacters + "; nextPlainCharacters: " + nextPlainCharacters);
-
                 } // end iteration over spans in line
 
                 tags2close = [];
@@ -230,8 +220,6 @@
                 }
 
                 nextCharacters += getOrderedEndTags(tags2close);
-
-                console.log("================= getXmlForLineSpan: Return withMarkup: " + nextCharacters + "; plainText: "+ nextPlainCharacters);
 
                 return {
                     withMarkup: nextCharacters,
