@@ -154,6 +154,8 @@
                                     {
                                       // leaving bold (e.g.) also leaves italics, etc.
                                       var left = false;
+                                      
+                                      // check if ANY prop has to be left
                                       for (var i = 0; i < propVals.length; i++)
                                       {
                                         var v = propVals[i];
@@ -164,15 +166,21 @@
                                             left = true;
                                           }
                                         }
-                                        else
-                                        {
-                                          if (v === true)
-                                          {
-                                            propVals[i] = STAY; // tag will be closed and re-opened
-                                          }
-                                        }
                                       }
 
+                                      // if any prop was left, close and re-open the others that are active (value 'true')
+                                      if (left) {
+	                                      for (var i = 0; i < propVals.length; i++)
+	                                      {
+	                                        var v = propVals[i];
+	                                        if (v === true) {
+	                                            propVals[i] = STAY; // tag will be closed and re-opened
+	                                        }
+	                                      }
+	                                  }
+                                      
+                                      
+                                      
                                       tags2close = [];
 
                                       for (var k = propVals.length - 1; k >= 0; k--) {
