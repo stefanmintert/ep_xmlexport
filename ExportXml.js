@@ -6,10 +6,65 @@
     var Changeset = require("ep_etherpad-lite/static/js/Changeset");
     var padManager = require("ep_etherpad-lite/node/db/PadManager");
     var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
+    var commentsPlugin = false;
+    
+    try {
+    	commentsPlugin = require("../ep_comments_page/commentManager.js");
+    } catch (e) {
+    	console.log("Can't load comments plug-in.");
+    	console.log(JSON.stringify(e));
+    }
 
     //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
     var DROPATTRIBUTES = []; 
 
+	
+	var commentsCollector = (function() {
+		
+		// allComments = all comments saved for a pad (including those for older pad versions)
+		var allComments = {};
+		
+		// currentPadComments = only those comments, that are required for the current pad content
+		var currentPadComments = {};
+
+		
+		var init = function(comments) {
+			allComments = comments;
+		};
+		
+		var addComment = function(commentId) {
+			
+			console.log("################## " + JSON.stringify(commentId));
+			console.log("################## " + JSON.stringify(allComments));
+			console.log("################## " + JSON.stringify(allComments.comments));
+
+			if (allComments.comments && allComments.comments[commentId]) {
+			
+				currentPadComments[commentId].data = allComments.comments[commentId];
+				currentPadComments[commentId].replies = {};
+				
+				for (replyId in allComments.replies) {
+					console.log("%%%%%%%%%%%%%%%%%%% " + JSON.stringify(allComments.replies[replyId]));
+					console.log("%%%%%%%%%%%%%%%%%%% " + JSON.stringify(commentId));
+					if (allComments.replies.hasOwnProperty(replyId) && allComments.replies[replyId].commentId == commentId) {
+						console.log("%%%%%%%%%%%%%%%%%%% " + JSON.stringify("yeah"));
+						currentPadComments[commentId].replies[replyId] = allComments.replies[replyId];
+					}
+				}
+			}
+		};
+		
+		var getComments = function() {
+			return currentPadComments;
+		};
+		
+		
+		return {
+			init: init,
+			addComment: addComment,
+			getComments: getComments 
+		}
+	})();
 	
 	
 	
@@ -41,15 +96,20 @@
                     }
 
                     xml = getXmlFromAtext(pad, atext, reqOptions);
-                        callback(null, xml);
+                    callback(null, xml);
                   });
         } else {
               atext = pad.atext;
               xml = getXmlFromAtext(pad, atext, reqOptions);
+              
+              console.log("++++++++++++++++++++++++++++++++++++");
+              console.log("++++++++++++++++++++++++++++++++++++");
+              console.log("++++++++++++++++++++++++++++++++++++");
+              console.log("++++++++++++++++++++++++++++++++++++");
+              console.log("++++++++++++++++++++++++++++++++++++");
+              console.log(JSON.stringify(commentsCollector.getComments()));
               callback(null, xml);
             }
-
-
     };
 	
     /*
@@ -187,11 +247,17 @@
 
 
                       for (var l = 0; l < propVals.length; l++) {
-                        if (propVals[l] === ENTER || propVals[l] === STAY) {
-                            openTags.unshift(l);
-                            nextCharacters += getXmlStartTagForEplAttribute(apool, props, l);
-                            propVals[l] = true;
-                        }
+
+                    	  // If entering a new comment, process comment and replies
+                    	  if (propVals[l] === ENTER && props[l] === "comment") {
+                              commentsCollector.addComment(apool.numToAttrib[l][1]);
+                    	  }
+                          
+                          if (propVals[l] === ENTER || propVals[l] === STAY) {
+                              openTags.unshift(l);
+                              nextCharacters += getXmlStartTagForEplAttribute(apool, props, l);
+                              propVals[l] = true;
+                          }
                       }
                       // propVals is now all {true,false} again
                     } // end if (propChanged)
@@ -460,10 +526,40 @@
         padManager.getPad(padId, function (err, pad) {
             if (ERR(err, callback)) return;
 
-            getPadXml(pad, reqOptions, function (err, xml) {
-                if (ERR(err, callback)) return;
-                callback(null, '<?xml version="1.0"?>\n<pad>\n' + xml + '\n</pad>');
+            if (commentsPlugin) { // export xml with pad comments
+            	
+            	commentsPlugin.getComments(padId, function(err, padComments) {
+            		// TODO handle error
+            		console.log(JSON.stringify(padComments));
+            		
+            		commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
+                		// TODO handle error
+                		console.log(JSON.stringify(commentReplies));
+                		
+                		var comments = {
+                				comments: padComments.comments,
+                				replies: commentReplies.replies
+                		}
+
+            			console.log("::::::::::::::::::: " + JSON.stringify(padComments));
+            			console.log("::::::::::::::::::: " + JSON.stringify(commentReplies));
+            			console.log("::::::::::::::::::: " + JSON.stringify(comments));
+
+                		commentsCollector.init(comments);                		
+                	});
+            	});
+            	
+            }
+            
+            
+    		getPadXml(pad, reqOptions, function (err, xml) {
+                if (ERR(err, callback)) {
+                	return;
+                } else {
+                	callback(null, '<?xml version="1.0"?>\n<pad>\n' + xml + '\n</pad>');
+                }
             });
+
         });
     };
 
