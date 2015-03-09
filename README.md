@@ -107,3 +107,13 @@ My own part of work is available under the following license.
        See the License for the specific language governing permissions and
        limitations under the License.
 
+
+## Version history
+
+### 2.0.0
+
+* Added export functionality for [EPL comments](https://www.npmjs.com/package/ep_comments_page). Requires [jsxml](https://www.npmjs.com/package/jsxml)
+
+### 1.0.x
+
+* First version
