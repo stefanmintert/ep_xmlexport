@@ -113,7 +113,10 @@ My own part of work is available under the following license.
 ### 2.0.0
 
 * Added export functionality for [EPL comments](https://www.npmjs.com/package/ep_comments_page). Requires [jsxml](https://www.npmjs.com/package/jsxml)
+* Incompatible change of XML export format. See DTD(s) for details. You have to update your code if you're processing the exported XML.
 
 ### 1.0.x
 
 * First version
+* Exports content of a Pad in XML.
+
