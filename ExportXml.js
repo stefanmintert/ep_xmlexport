@@ -6,148 +6,11 @@
     var Changeset = require("ep_etherpad-lite/static/js/Changeset");
     var padManager = require("ep_etherpad-lite/node/db/PadManager");
     var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
-    var commentsPlugin = false;
-    var jsxml = false;
+    var commentsXml = require("./commentsXml.js");
     
-    
-    try {
-    	commentsPlugin = require("../ep_comments_page/commentManager.js");
-    } catch (e) {
-    	console.log("Can't load comments plug-in.");
-    	console.log(JSON.stringify(e));
-    }
-    
-    try {
-    	jsxml = require("jsxml");
-    } catch (e) {
-    	console.log("Can't load jsxml. Implication: I can't use comments plug-in.");
-    	console.log(JSON.stringify(e));
-    	commentsPlugin = false;
-    }
-    
-    
-    
-
     //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
     var DROPATTRIBUTES = []; 
 
-	
-	var commentsCollector = (function() {
-		
-		// allComments = all comments saved for a pad (including those for older pad versions)
-		var allComments = {};
-		
-		// currentPadComments = only those comments, that are required for the current pad content
-		var currentPadComments = [];
-
-		
-		var init = function(comments) {
-			allComments = comments;
-		};
-		
-		var selectComment = function(commentId) {
-			currentPadComments.push(commentId.toString());
-		};
-		
-		var getCommentsXml = function() {
-			var xmlString = "";
-			
-			if (currentPadComments.length > 0) {
-				xmlString = "<comments>";
-				
-				
-				for (var i = 0; i < currentPadComments.length; i++) {
-					xmlString += commentToXml(currentPadComments[i]);
-				}
-				xmlString += "</comments>\n";
-			}
-			
-			return xmlString;
-		};
-		
-		var commentToXml = function(commentId) {
-			if (allComments.comments && allComments.comments[commentId]) {
-				var newCommentElement = [ 
-				                          "comment", 
-				                          {
-				                        	  "id": commentId.toString(),
-				                        	  "timestamp": allComments.comments[commentId].timestamp.toString(),
-				                        	  "isoDateTime": (new Date(allComments.comments[commentId].timestamp)).toISOString()
-				                          },
-				                         ]; 
-
-				
-				var newAuthorElement = [
-				                        	"author",
-				                        	{
-				                        		"id": allComments.comments[commentId].author.toString()
-				                        	},
-				                        	allComments.comments[commentId].name.toString()
-				                        	];
-				
-				newCommentElement.push(newAuthorElement);
-				
-				var newTextElement = [
-				                      	"text",
-				                      	{},
-				                      	allComments.comments[commentId].text.toString()
-				                      ];
-				
-				
-				newCommentElement.push(newTextElement);
-				
-				
-				var replies = ["replies",{}];
-				
-				for (var replyId in allComments.replies) {
-					if (allComments.replies.hasOwnProperty(replyId) && allComments.replies[replyId].commentId == commentId) {
-
-						var reply = [
-						             "comment",
-						             {
-						            	 "id": replyId.toString(),
-						            	 "timestamp": allComments.replies[replyId].timestamp.toString(),
-			                        	  "isoDateTime": (new Date(allComments.replies[replyId].timestamp)).toISOString()
-						             },
-									[
-										"author",
-										{
-											"id": allComments.replies[replyId].author.toString()
-										},
-										allComments.replies[replyId].name.toString()
-									],
-									[
-									 	"text",
-									 	{},
-									 	allComments.replies[replyId].text.toString()
-									 ]
-					              ];
-					
-						replies.push(reply);
-					}
-				}
-				
-				if (replies.length > 2 ) { // only add replies element if there are reply children
-					newCommentElement.push(replies);
-				}
-				
-				
-				return "\n" + jsxml.toXml(newCommentElement);
-				
-			}
-			
-		}
-		
-		
-		
-		return {
-			init: init,
-			selectComment: selectComment,
-			getCommentsXml: getCommentsXml 
-		}
-	})();
-	
-	
 	
     function getXmlStartTagForEplAttribute(apool, props, i) {
   	  var startTag = '<attribute key="'
@@ -183,7 +46,7 @@
               padContentXml = "<content>"  + getXmlFromAtext(pad, atext, reqOptions) + "</content>\n";
               
               
-              var commentsXml = commentsCollector.getCommentsXml(); 
+              var commentsXml = commentsXml.getCommentsXml(); 
               console.log(commentsXml);
 
               
@@ -329,7 +192,7 @@
 
                     	  // If entering a new comment, process comment and replies
                     	  if (propVals[l] === ENTER && props[l] === "comment") {
-                              commentsCollector.selectComment(apool.numToAttrib[l][1]);
+                              commentsXml.selectComment(apool.numToAttrib[l][1]);
                     	  }
                           
                           if (propVals[l] === ENTER || propVals[l] === STAY) {
@@ -604,28 +467,7 @@
     var getPadXmlDocument = function(padId, reqOptions, callback) {
         padManager.getPad(padId, function (err, pad) {
             if (ERR(err, callback)) return;
-
-            if (commentsPlugin) { // export xml with pad comments
-            	
-            	commentsPlugin.getComments(padId, function(err, padComments) {
-            		// TODO handle error
-            		console.log(JSON.stringify(padComments));
-            		
-            		commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
-                		// TODO handle error
-                		console.log(JSON.stringify(commentReplies));
-                		
-                		var comments = {
-                				comments: padComments.comments,
-                				replies: commentReplies.replies
-                		}
-
-                		commentsCollector.init(comments);                		
-                	});
-            	});
-            	
-            }
-            
+            commentsXml.init(padId);
             
     		getPadXml(pad, reqOptions, function (err, xml) {
                 if (ERR(err, callback)) {
