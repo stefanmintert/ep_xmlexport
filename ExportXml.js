@@ -7,6 +7,8 @@
     var padManager = require("ep_etherpad-lite/node/db/PadManager");
     var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
     var commentsPlugin = false;
+    var jsxml = false;
+    
     
     try {
     	commentsPlugin = require("../ep_comments_page/commentManager.js");
@@ -14,6 +16,17 @@
     	console.log("Can't load comments plug-in.");
     	console.log(JSON.stringify(e));
     }
+    
+    try {
+    	jsxml = require("jsxml");
+    } catch (e) {
+    	console.log("Can't load jsxml. Implication: I can't use comments plug-in.");
+    	console.log(JSON.stringify(e));
+    	commentsPlugin = false;
+    }
+    
+    
+    
 
     //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
     var DROPATTRIBUTES = []; 
@@ -25,44 +38,112 @@
 		var allComments = {};
 		
 		// currentPadComments = only those comments, that are required for the current pad content
-		var currentPadComments = {};
+		var currentPadComments = [];
 
 		
 		var init = function(comments) {
 			allComments = comments;
 		};
 		
-		var addComment = function(commentId) {
-			
-			console.log("################## " + JSON.stringify(commentId));
-			console.log("################## " + JSON.stringify(allComments));
-			console.log("################## " + JSON.stringify(allComments.comments));
-
-			if (allComments.comments && allComments.comments[commentId]) {
-			
-				currentPadComments[commentId].data = allComments.comments[commentId];
-				currentPadComments[commentId].replies = {};
-				
-				for (replyId in allComments.replies) {
-					console.log("%%%%%%%%%%%%%%%%%%% " + JSON.stringify(allComments.replies[replyId]));
-					console.log("%%%%%%%%%%%%%%%%%%% " + JSON.stringify(commentId));
-					if (allComments.replies.hasOwnProperty(replyId) && allComments.replies[replyId].commentId == commentId) {
-						console.log("%%%%%%%%%%%%%%%%%%% " + JSON.stringify("yeah"));
-						currentPadComments[commentId].replies[replyId] = allComments.replies[replyId];
-					}
-				}
-			}
+		var selectComment = function(commentId) {
+			currentPadComments.push(commentId.toString());
 		};
 		
-		var getComments = function() {
-			return currentPadComments;
+		var getCommentsXml = function() {
+			var xmlString = "";
+			
+			if (currentPadComments.length > 0) {
+				xmlString = "<comments>";
+				
+				
+				for (var i = 0; i < currentPadComments.length; i++) {
+					xmlString += commentToXml(currentPadComments[i]);
+				}
+				xmlString += "</comments>\n";
+			}
+			
+			return xmlString;
 		};
+		
+		var commentToXml = function(commentId) {
+			if (allComments.comments && allComments.comments[commentId]) {
+				var newCommentElement = [ 
+				                          "comment", 
+				                          {
+				                        	  "id": commentId.toString(),
+				                        	  "timestamp": allComments.comments[commentId].timestamp.toString(),
+				                        	  "isoDateTime": (new Date(allComments.comments[commentId].timestamp)).toISOString()
+				                          },
+				                         ]; 
+
+				
+				var newAuthorElement = [
+				                        	"author",
+				                        	{
+				                        		"id": allComments.comments[commentId].author.toString()
+				                        	},
+				                        	allComments.comments[commentId].name.toString()
+				                        	];
+				
+				newCommentElement.push(newAuthorElement);
+				
+				var newTextElement = [
+				                      	"text",
+				                      	{},
+				                      	allComments.comments[commentId].text.toString()
+				                      ];
+				
+				
+				newCommentElement.push(newTextElement);
+				
+				
+				var replies = ["replies",{}];
+				
+				for (var replyId in allComments.replies) {
+					if (allComments.replies.hasOwnProperty(replyId) && allComments.replies[replyId].commentId == commentId) {
+
+						var reply = [
+						             "comment",
+						             {
+						            	 "id": replyId.toString(),
+						            	 "timestamp": allComments.replies[replyId].timestamp.toString(),
+			                        	  "isoDateTime": (new Date(allComments.replies[replyId].timestamp)).toISOString()
+						             },
+									[
+										"author",
+										{
+											"id": allComments.replies[replyId].author.toString()
+										},
+										allComments.replies[replyId].name.toString()
+									],
+									[
+									 	"text",
+									 	{},
+									 	allComments.replies[replyId].text.toString()
+									 ]
+					              ];
+					
+						replies.push(reply);
+					}
+				}
+				
+				if (replies.length > 2 ) { // only add replies element if there are reply children
+					newCommentElement.push(replies);
+				}
+				
+				
+				return "\n" + jsxml.toXml(newCommentElement);
+				
+			}
+			
+		}
+		
 		
 		
 		return {
 			init: init,
-			addComment: addComment,
-			getComments: getComments 
+			selectComment: selectComment,
+			getCommentsXml: getCommentsXml 
 		}
 	})();
 	
@@ -83,9 +164,8 @@
     }
 	
     var getPadXml = function (pad, reqOptions, callback) {
-        var atext, xml;
-            var revNum = reqOptions.revision;
-
+        var atext, xml, commentsXml;
+        var revNum = reqOptions.revision;
 
         if (revNum) {
               pad.getInternalRevisionAText(revNum, function (err, revisionAtext) {
@@ -95,20 +175,19 @@
                             atext = revisionAtext;
                     }
 
-                    xml = getXmlFromAtext(pad, atext, reqOptions);
-                    callback(null, xml);
+                    padContentXml = "<content>"  + getXmlFromAtext(pad, atext, reqOptions) + "</content>\n";
+                    callback(null, padContentXml + commentsXml);
                   });
         } else {
               atext = pad.atext;
-              xml = getXmlFromAtext(pad, atext, reqOptions);
+              padContentXml = "<content>"  + getXmlFromAtext(pad, atext, reqOptions) + "</content>\n";
               
-              console.log("++++++++++++++++++++++++++++++++++++");
-              console.log("++++++++++++++++++++++++++++++++++++");
-              console.log("++++++++++++++++++++++++++++++++++++");
-              console.log("++++++++++++++++++++++++++++++++++++");
-              console.log("++++++++++++++++++++++++++++++++++++");
-              console.log(JSON.stringify(commentsCollector.getComments()));
-              callback(null, xml);
+              
+              var commentsXml = commentsCollector.getCommentsXml(); 
+              console.log(commentsXml);
+
+              
+              callback(null, padContentXml + commentsXml);
             }
     };
 	
@@ -250,7 +329,7 @@
 
                     	  // If entering a new comment, process comment and replies
                     	  if (propVals[l] === ENTER && props[l] === "comment") {
-                              commentsCollector.addComment(apool.numToAttrib[l][1]);
+                              commentsCollector.selectComment(apool.numToAttrib[l][1]);
                     	  }
                           
                           if (propVals[l] === ENTER || propVals[l] === STAY) {
@@ -540,10 +619,6 @@
                 				comments: padComments.comments,
                 				replies: commentReplies.replies
                 		}
-
-            			console.log("::::::::::::::::::: " + JSON.stringify(padComments));
-            			console.log("::::::::::::::::::: " + JSON.stringify(commentReplies));
-            			console.log("::::::::::::::::::: " + JSON.stringify(comments));
 
                 		commentsCollector.init(comments);                		
                 	});

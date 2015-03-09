@@ -26,8 +26,20 @@
 
 
 -->
-<!ELEMENT pad       (line+)>
+<!ELEMENT pad       (content, comments?)>
+<!ELEMENT content   (line+)>
 <!ELEMENT line      (#PCDATA | attribute)*>
 <!ELEMENT attribute (#PCDATA | attribute)*>
 <!ATTLIST attribute key CDATA #REQUIRED
                     value CDATA #REQUIRED>
+<!ELEMENT comments  (comment+)>
+<!ELEMENT comment   (author, text, replies?)>
+<!ATTLIST comment   id CDATA #REQUIRED
+                    timestamp CDATA #REQUIRED
+                    isoDateTime CDATA #IMPLIED>
+<!ELEMENT replies   (comment+)>
+
+<!ELEMENT author    (#PCDATA)>
+<!ATTLIST author    id CDATA #REQUIRED>
+
+<!ELEMENT text      (#PCDATA)>

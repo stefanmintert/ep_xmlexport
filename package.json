@@ -18,7 +18,9 @@
   },
   "dependencies": {},
   "devDependencies": {},
-  "optionalDependencies": {},
+  "optionalDependencies": {
+    "jsxml" : ">=0.0.2"
+  },
   "engines": {
     "node": "*"
   }

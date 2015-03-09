@@ -38,7 +38,8 @@
 
 
 -->
-<!ELEMENT pad       (line | list)+>
+<!ELEMENT pad       (content, comments?)>
+<!ELEMENT content   (line | list)+>
 <!ELEMENT line      (#PCDATA | attribute | matched-text)*>
 <!ATTLIST line      author CDATA #IMPLIED
                     insertorder CDATA #IMPLIED
@@ -59,3 +60,18 @@
 <!ATTLIST matched-text key CDATA #REQUIRED
                        value CDATA #REQUIRED
 >
+
+
+<!ELEMENT comments  (comment+)>
+<!ELEMENT comment   (author, text, replies?)>
+<!ATTLIST comment   id CDATA #REQUIRED
+                    timestamp CDATA #REQUIRED
+                    isoDateTime CDATA #IMPLIED>
+<!ELEMENT replies   (comment+)>
+
+<!ELEMENT author    (#PCDATA)>
+<!ATTLIST author    id CDATA #REQUIRED>
+
+<!ELEMENT text      (#PCDATA)>
+
+
