@@ -185,7 +185,7 @@
 
                       for (var l = 0; l < propVals.length; l++) {
 
-                    	  // If entering a new comment, process comment and replies
+                    	  // If entering a new comment, select comment for later translation to XML
                     	  if (propVals[l] === ENTER && props[l] === "comment") {
                               commentsXml.selectComment(apool.numToAttrib[l][1]);
                     	  }
