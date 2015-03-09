@@ -20,7 +20,6 @@
     }
 	
 	
-	
 	var commentsXml = (function() {
 		
 		// allComments = all comments saved for a pad (including those for older pad versions)
@@ -35,11 +34,9 @@
             	
             	commentsPlugin.getComments(padId, function(err, padComments) {
             		// TODO handle error
-            		console.log(JSON.stringify(padComments));
             		
             		commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
                 		// TODO handle error
-                		console.log(JSON.stringify(commentReplies));
                 		
                 		allComments = {
                 				comments: padComments.comments,

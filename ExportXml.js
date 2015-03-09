@@ -27,7 +27,7 @@
     }
 	
     var getPadXml = function (pad, reqOptions, callback) {
-        var atext, xml, commentsXml;
+        var atext, xml, xmlComments;
         var revNum = reqOptions.revision;
 
         if (revNum) {
@@ -44,13 +44,8 @@
         } else {
               atext = pad.atext;
               padContentXml = "<content>"  + getXmlFromAtext(pad, atext, reqOptions) + "</content>\n";
-              
-              
-              var commentsXml = commentsXml.getCommentsXml(); 
-              console.log(commentsXml);
-
-              
-              callback(null, padContentXml + commentsXml);
+              xmlComments = commentsXml.getCommentsXml(); 
+              callback(null, padContentXml + xmlComments);
             }
     };
 	
