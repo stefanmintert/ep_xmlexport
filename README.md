@@ -83,6 +83,11 @@ The XML format changes if at least one of the output control parameters are set 
 
 There's no only an experimental DTD for extended EPL XML: [epl-x.dtd](epl-x.dtd). Why experimental? Because the XML format changes with every new plug-in that introduces a new line marker attribute. BTW: The '-x' means "extended", not "experimental".
 
+## Exporting Comments
+
+Since version 2.0.0 EPL-comments are supported. The supported plugin is [ep_comments_page](https://www.npmjs.com/package/ep_comments_page). If installed, comments are exported along with their replies. There's no switch and no need to turn this feature on. But [jsxml](https://www.npmjs.com/package/jsxml) is required. It's listed as an optional dependency in package.json. If jsxml is not available, you won't get any comments in the exported XML.
+
+
 ## Samples
 
 ### Plain text
@@ -208,11 +213,37 @@ exports [list-lists.xml](./samples/list-lists.xml)
       </content>
     </pad>
 
+### Comments
+
+![Content with a comment](./samples/comment-reply.png)
+
+The request
+
+    http://<hostPort>/p/<padName>/export/xml
+
+exports [comment-reply.xml](./samples/comment-reply.xml)
+
+    <?xml version="1.0"?>
+    <pad>
+      <content>
+        <line>Hello <attribute key="comment" value="c-Bu5TKhq62OyBX9iI">Wolrd</attribute></line>
+        <line></line>
+      </content>
+      <comments>
+        <comment id="c-Bu5TKhq62OyBX9iI" timestamp="1425999544594" isoDateTime="2015-03-10T14:59:04.594Z">
+          <author id="a.hrDy4M2ybSkTHI50">Anonymous</author>
+          <text>That's a typo.</text>
+          <replies>
+            <comment id="c-reply-xNnbXKp3Mi0y6KCZ" timestamp="1425999570817" isoDateTime="2015-03-10T14:59:30.817Z">
+              <author id="a.hrDy4M2ybSkTHI50">Anonymous</author>
+              <text>Thanks! I'll fix it.</text>
+            </comment>
+          </replies>
+        </comment>
+      </comments>
+    </pad>
 
 
-## Exporting Comments
-
-Since version 2.0.0 EPL-comments are supported. The supported plugin is [ep_comments_page](https://www.npmjs.com/package/ep_comments_page). If installed, comments are exported along with their replies. There's no switch and no need to turn this feature on. But [jsxml](https://www.npmjs.com/package/jsxml) is required. It's listed as an optional dependency in package.json. If jsxml is not available, you won't get any comments in the exported XML.
 
 ## Legal Information
 

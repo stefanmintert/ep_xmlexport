@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>Hello <attribute key="comment" value="c-Bu5TKhq62OyBX9iI">Wolrd</attribute><!-- /comment --></line>
+<line></line>
+</content>
+<comments>
+<comment id="c-Bu5TKhq62OyBX9iI" timestamp="1425999544594" isoDateTime="2015-03-10T14:59:04.594Z"><author id="a.hrDy4M2ybSkTHI50">Anonymous</author><text>That&apos;s a typo.</text><replies><comment id="c-reply-xNnbXKp3Mi0y6KCZ" timestamp="1425999570817" isoDateTime="2015-03-10T14:59:30.817Z"><author id="a.hrDy4M2ybSkTHI50">Anonymous</author><text>Thanks! I&apos;ll fix it.</text></comment></replies></comment></comments>
+
+</pad>
