@@ -99,14 +99,15 @@ The request
     http://<hostPort>/p/<padName>/export/xml
 
 exports [helloworld.xml](./samples/helloworld.xml)
-
-    <?xml version="1.0"?>
-    <pad>
-      <content>
-        <line>Hello World</line>
-        <line></line>
-      </content>
-    </pad>
+```xml
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <line>Hello World</line>
+    <line></line>
+  </content>
+</pad>
+```
 
 ### Heading
 
@@ -120,14 +121,16 @@ The request
 
 exports [heading-generic.xml](./samples/heading-generic.xml)
 
-    <?xml version="1.0"?>
-    <pad>
-      <content>
-        <line><attribute key="heading" value="h1"><attribute key="insertorder" value="first"><attribute key="lmkr" value="1">*</attribute>Hello World</line>
-        <line>A heading above</line>
-        <line></line>
-      </content>
-    </pad>
+```xml
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <line><attribute key="heading" value="h1"><attribute key="insertorder" value="first"><attribute key="lmkr" value="1">*</attribute>Hello World</line>
+    <line>A heading above</line>
+    <line></line>
+  </content>
+</pad>
+```
 
 #### Extended EPL-XML
 
@@ -137,14 +140,16 @@ The request
 
 exports [heading-extended.xml](./samples/heading-extended.xml)
 
-    <?xml version="1.0"?>
-    <pad>
-      <content>
-        <line heading="h1" insertorder="first" lmkr="1">Hello World</line>
-        <line>A heading above</line>
-        <line></line>
-      </content>
-    </pad>
+```xml
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <line heading="h1" insertorder="first" lmkr="1">Hello World</line>
+    <line>A heading above</line>
+    <line></line>
+  </content>
+</pad>
+```
 
 ### Lists
 
@@ -158,15 +163,17 @@ The request
 
 exports [list-generic.xml](./samples/list-generic.xml)
 
-    <?xml version="1.0"?>
-    <pad>
-      <content>
-        <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="1">*</attribute>List item a</line>
-        <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="2">*</attribute>List item b</line>
-        <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="3">*</attribute>List item c</line>
-        <line></line>
-      </content>
-    </pad>
+```xml
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="1">*</attribute>List item a</line>
+    <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="2">*</attribute>List item b</line>
+    <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="3">*</attribute>List item c</line>
+    <line></line>
+  </content>
+</pad>
+```
 
 #### Extended EPL-XML with lineattribs=true
 
@@ -176,16 +183,17 @@ The request
 
 exports [list-lineattribs.xml](./samples/list-lineattribs.xml)
 
-    <?xml version="1.0"?>
-    <pad>
-      <content>
-        <line insertorder="first" list="bullet1" lmkr="1" start="1">List item a</line>
-        <line insertorder="first" list="bullet1" lmkr="1" start="2">List item b</line>
-        <line insertorder="first" list="bullet1" lmkr="1" start="3">List item c</line>
-        <line></line>
-      </content>
-    </pad>
-
+```xml
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <line insertorder="first" list="bullet1" lmkr="1" start="1">List item a</line>
+    <line insertorder="first" list="bullet1" lmkr="1" start="2">List item b</line>
+    <line insertorder="first" list="bullet1" lmkr="1" start="3">List item c</line>
+    <line></line>
+  </content>
+</pad>
+```
 
 #### Extended EPL-XML with lists=true
 
@@ -195,23 +203,25 @@ The request
 
 exports [list-lists.xml](./samples/list-lists.xml)
 
-    <?xml version="1.0"?>
-    <pad>
-      <content>
-        <list type="bullet">
-          <item>
-            <line>List item a</line>
-          </item>
-          <item>
-            <line>List item b</line>
-          </item>
-          <item>
-            <line>List item c</line>
-          </item>
-        </list>
-        <line></line>
-      </content>
-    </pad>
+```xml
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <list type="bullet">
+      <item>
+        <line>List item a</line>
+      </item>
+      <item>
+        <line>List item b</line>
+      </item>
+      <item>
+        <line>List item c</line>
+      </item>
+    </list>
+    <line></line>
+  </content>
+</pad>
+```
 
 ### Comments
 
@@ -223,27 +233,27 @@ The request
 
 exports [comment-reply.xml](./samples/comment-reply.xml)
 
-    <?xml version="1.0"?>
-    <pad>
-      <content>
-        <line>Hello <attribute key="comment" value="c-Bu5TKhq62OyBX9iI">Wolrd</attribute></line>
-        <line></line>
-      </content>
-      <comments>
-        <comment id="c-Bu5TKhq62OyBX9iI" timestamp="1425999544594" isoDateTime="2015-03-10T14:59:04.594Z">
+```xml
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <line>Hello <attribute key="comment" value="c-Bu5TKhq62OyBX9iI">Wolrd</attribute></line>
+    <line></line>
+  </content>
+  <comments>
+    <comment id="c-Bu5TKhq62OyBX9iI" timestamp="1425999544594" isoDateTime="2015-03-10T14:59:04.594Z">
+      <author id="a.hrDy4M2ybSkTHI50">Anonymous</author>
+      <text>That's a typo.</text>
+      <replies>
+        <comment id="c-reply-xNnbXKp3Mi0y6KCZ" timestamp="1425999570817" isoDateTime="2015-03-10T14:59:30.817Z">
           <author id="a.hrDy4M2ybSkTHI50">Anonymous</author>
-          <text>That's a typo.</text>
-          <replies>
-            <comment id="c-reply-xNnbXKp3Mi0y6KCZ" timestamp="1425999570817" isoDateTime="2015-03-10T14:59:30.817Z">
-              <author id="a.hrDy4M2ybSkTHI50">Anonymous</author>
-              <text>Thanks! I'll fix it.</text>
-            </comment>
-          </replies>
+          <text>Thanks! I'll fix it.</text>
         </comment>
-      </comments>
-    </pad>
-
-
+      </replies>
+    </comment>
+  </comments>
+</pad>
+```
 
 ## Legal Information
 
