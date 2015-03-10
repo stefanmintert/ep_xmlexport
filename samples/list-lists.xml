@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<pad>
+<content>
+<list type='bullet'>
+   <item><line>List item a</line></item>
+   <item><line>List item b</line></item>
+   <item><line>List item c</line></item>
+</list>
+<line></line>
+</content>
+
+</pad>

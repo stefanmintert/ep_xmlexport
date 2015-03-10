@@ -83,6 +83,133 @@ The XML format changes if at least one of the output control parameters are set 
 
 There's no only an experimental DTD for extended EPL XML: [epl-x.dtd](epl-x.dtd). Why experimental? Because the XML format changes with every new plug-in that introduces a new line marker attribute. BTW: The '-x' means "extended", not "experimental".
 
+## Samples
+
+### Plain text
+
+![Hello World document](./samples/helloworld.png)
+
+The request
+
+    http://<hostPort>/p/<padName>/export/xml
+
+exports [helloworld.xml](./samples/helloworld.xml)
+
+    <?xml version="1.0"?>
+    <pad>
+      <content>
+        <line>Hello World</line>
+        <line></line>
+      </content>
+    </pad>
+
+### Heading
+
+![Sample with a heading](./samples/heading.png)
+
+#### Generic EPL-XML
+
+The request
+
+    http://<hostPort>/p/<padName>/export/xml
+
+exports [heading-generic.xml](./samples/heading-generic.xml)
+
+    <?xml version="1.0"?>
+    <pad>
+      <content>
+        <line><attribute key="heading" value="h1"><attribute key="insertorder" value="first"><attribute key="lmkr" value="1">*</attribute>Hello World</line>
+        <line>A heading above</line>
+        <line></line>
+      </content>
+    </pad>
+
+#### Extended EPL-XML
+
+The request
+
+    http://<hostPort>/p/<padName>/export/xml?lineattribs=true
+
+exports [heading-extended.xml](./samples/heading-extended.xml)
+
+    <?xml version="1.0"?>
+    <pad>
+      <content>
+        <line heading="h1" insertorder="first" lmkr="1">Hello World</line>
+        <line>A heading above</line>
+        <line></line>
+      </content>
+    </pad>
+
+### Lists
+
+![Sample with a list](./samples/list.png)
+
+#### Generic EPL-XML
+
+The request 
+
+    http://<hostPort>/p/<padName>/export/xml
+
+exports [list-generic.xml](./samples/list-generic.xml)
+
+    <?xml version="1.0"?>
+    <pad>
+      <content>
+        <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="1">*</attribute>List item a</line>
+        <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="2">*</attribute>List item b</line>
+        <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="3">*</attribute>List item c</line>
+        <line></line>
+      </content>
+    </pad>
+
+#### Extended EPL-XML with lineattribs=true
+
+The request
+
+    http://<hostPort>/p/<padName>/export/xml?lineattribs=true
+
+exports [list-lineattribs.xml](./samples/list-lineattribs.xml)
+
+    <?xml version="1.0"?>
+    <pad>
+      <content>
+        <line insertorder="first" list="bullet1" lmkr="1" start="1">List item a</line>
+        <line insertorder="first" list="bullet1" lmkr="1" start="2">List item b</line>
+        <line insertorder="first" list="bullet1" lmkr="1" start="3">List item c</line>
+        <line></line>
+      </content>
+    </pad>
+
+
+#### Extended EPL-XML with lists=true
+
+The request
+
+    http://<hostPort>/p/<padName>/export/xml?lists=true
+
+exports [list-lists.xml](./samples/list-lists.xml)
+
+    <?xml version="1.0"?>
+    <pad>
+      <content>
+        <list type="bullet">
+          <item>
+            <line>List item a</line>
+          </item>
+          <item>
+            <line>List item b</line>
+          </item>
+          <item>
+            <line>List item c</line>
+          </item>
+        </list>
+        <line></line>
+      </content>
+    </pad>
+
+
+
 ## Exporting Comments
 
 Since version 2.0.0 EPL-comments are supported. The supported plugin is [ep_comments_page](https://www.npmjs.com/package/ep_comments_page). If installed, comments are exported along with their replies. There's no switch and no need to turn this feature on. But [jsxml](https://www.npmjs.com/package/jsxml) is required. It's listed as an optional dependency in package.json. If jsxml is not available, you won't get any comments in the exported XML.
