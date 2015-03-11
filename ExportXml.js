@@ -383,22 +383,22 @@
             if (whichList >= lists.length)//means we are on a deeper level of indentation than the previous line
             {
               lists.push([line.listLevel, line.listTypeName]);
-              pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"<list type='" + line.listTypeName + "'>\n"+(new Array(line.listLevel*4)).join(' ')+"<item>", lineContent || "\n", '</item>'); // number or bullet
+              pieces.push("\n<list type='" + line.listTypeName + "'>\n<item>", lineContent || "\n"); // number or bullet
             }
 
             else//means we are getting closer to the lowest level of indentation
             {
               while (whichList < lists.length - 1) {
-                pieces.push("\n"+(new Array((line.listLevel-1)*4)).join(' ')+"</list>"); // number or bullet
+                pieces.push("</item>\n</list>"); // number or bullet
                 lists.length--;
               }
-              pieces.push("\n"+(new Array(line.listLevel*4)).join(' ')+"<item>", lineContent || "\n", '</item>');
+              pieces.push("</item>\n<item>", lineContent || "\n");
             }
           } else//outside any list
           {
             while (lists.length > 0)//if was in a list: close it before
             {
-              pieces.push("\n"+(new Array((lists.length-1)*4)).join(' ')+"</list>\n"); // number or bullet
+              pieces.push("</item>\n</list>\n"); // number or bullet
               lists.length--;
             }      
             pieces.push(lineContent, "\n");

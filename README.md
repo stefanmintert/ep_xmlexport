@@ -57,6 +57,13 @@ But the markup is generalized. For every URI in the pad text you'll get the foll
 
 The generalized markup allows for an easy, later extension to match more patterns. 
 
+#### Pretty printing XML
+
+    http://<hostPort>/p/<padName>/<revision>/export/xml?pretty=true
+
+Pretty prints XML with the help of [pretty-data](https://www.npmjs.com/package/pretty-data). pretty-data is an optional dependency in package.json. If it's installed, you can use it. Otherwise the pretty=true argument has no effect.
+
+
 ### Response
 
 #### MIME type and encoding
@@ -279,6 +286,11 @@ My own part of work is available under the following license.
 
 
 ## Version history
+
+### 2.1.0
+
+* Added support for nested lists (epl-x.dtd was changed)
+* Added ?pretty=true|false HTTP parameter for pretty printing XML
 
 ### 2.0.0
 

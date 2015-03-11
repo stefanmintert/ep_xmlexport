@@ -51,7 +51,7 @@
 >
 <!ELEMENT list      (item)+>
 <!ATTLIST list      type CDATA #REQUIRED>
-<!ELEMENT item      (line)>
+<!ELEMENT item      (line | list)+>
 <!ELEMENT attribute (#PCDATA | attribute | matched-text)*>
 <!ATTLIST attribute key CDATA #REQUIRED
                     value CDATA #REQUIRED
