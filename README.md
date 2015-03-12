@@ -61,8 +61,9 @@ The generalized markup allows for an easy, later extension to match more pattern
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?pretty=true
 
-Pretty prints XML with the help of [pretty-data](https://www.npmjs.com/package/pretty-data). pretty-data is an optional dependency in package.json. If it's installed, you can use it. Otherwise the pretty=true argument has no effect.
+Pretty prints XML with the help of [pretty-data](https://www.npmjs.com/package/pretty-data). pretty-data is an optional dependency in package.json. If it's installed, you can use it. Otherwise the `pretty=true` argument has no effect.
 
+I suggest to use pretty printing only for debugging purposes. It might insert some probably unwanted whitespace.
 
 ### Response
 
@@ -88,7 +89,14 @@ You can validate the generic EPL XML against the [epl.dtd](epl.dtd).
 
 The XML format changes if at least one of the output control parameters are set to `true`. How the format changes is described for each of the control paramaters, see above.
 
-There's no only an experimental DTD for extended EPL XML: [epl-x.dtd](epl-x.dtd). Why experimental? Because the XML format changes with every new plug-in that introduces a new line marker attribute. BTW: The '-x' means "extended", not "experimental".
+There's only an experimental DTD for extended EPL XML: [epl-x.dtd](epl-x.dtd). Why experimental? Because the XML format changes with every new plug-in that introduces a new line marker attribute. BTW: The '-x' means "extended", not "experimental".
+
+**Q: epl-x or epl? Which DTD should I use?**
+**A:** Of course the answer is: That depends! epl.dtd seems to be pretty stable, and it should support a predictable output format. I simply try to export any part of the pad content in a canonical XML format. 
+
+epl-x.dtd on the other hand contains some *decisions* that might be subject to discussion. What's "correct" handling of lists isn't easy to define, so maybe you want to deal with lists on your own. EPL allows some weird lists indentations. How should the plug-in behave in such a case? The plug-in relies on code from the latex plug-in to do some "reasonable" lists conversion. Some like it, some don't. 
+
+I suggest to use as much from the epl-x export format as you like. I'll try to give you as much control as possible. 
 
 ## Exporting Comments
 
