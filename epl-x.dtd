@@ -41,13 +41,15 @@
 <!ELEMENT pad       (content, comments?)>
 <!ELEMENT content   (line | list)+>
 <!ELEMENT line      (#PCDATA | attribute | matched-text)*>
-<!ATTLIST line      author CDATA #IMPLIED
+<!ATTLIST line      
+                    author CDATA #IMPLIED
                     insertorder CDATA #IMPLIED
                     list CDATA #IMPLIED
                     heading CDATA #IMPLIED
                     lmkr CDATA #IMPLIED
                     start CDATA #IMPLIED
                     align (center | left | justify | right) "left"
+                    lineHeights CDATA #IMPLIED
 >
 <!ELEMENT list      (item)+>
 <!ATTLIST list      type CDATA #REQUIRED>
