@@ -7,25 +7,26 @@
     var padManager = require("ep_etherpad-lite/node/db/PadManager");
     var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
     var commentsXml = require("./commentsXml.js");
-    
-    //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
-    var DROPATTRIBUTES = []; 
+    var xmlescape = require("xml-escape");
 
-	
+    //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
+    var DROPATTRIBUTES = [];
+
+
     function getXmlStartTagForEplAttribute(apool, props, i) {
   	  var startTag = '<attribute key="'
 		 				+ props[i]
 		 				+ '" value="'
 		 				+ apool.numToAttrib[i][1]
 		 				+ '">';
-  	  
+
 	     return startTag;
     }
 
     function getXmlEndTagForEplAttribute(apool, props, i) {
   	  return '</attribute><!-- /' + props[i] + ' -->';
     }
-	
+
     var getPadXml = function (pad, reqOptions, callback) {
         var atext, xml, xmlComments;
         var revNum = reqOptions.revision;
@@ -44,16 +45,16 @@
         } else {
               atext = pad.atext;
               padContentXml = "<content>"  + getXmlFromAtext(pad, atext, reqOptions) + "</content>\n";
-              xmlComments = commentsXml.getCommentsXml(); 
+              xmlComments = commentsXml.getCommentsXml();
               callback(null, padContentXml + xmlComments);
             }
     };
-	
+
     /*
      * Unfortunately Changeset.stringIterator does not reveal it's current index.
      * This function calculates the index from the original string length
      * and the remaining number of characters.
-     * 
+     *
      */
     var getIteratorIndex = function(stringIterator, stringLength) {
             return (stringLength - stringIterator.remaining());
@@ -93,11 +94,11 @@
             var textIterator = Changeset.stringIterator(text);
 
             /*
-             * getXmlForLineSpan 
+             * getXmlForLineSpan
              * Gets text with length of 'numChars' starting from index 'fromIdx'.
              * Returns both, text with markup and plain text as literal object
-             * { withMarkup: ..., plainText: ... } 
-             *  
+             * { withMarkup: ..., plainText: ... }
+             *
              */
             function getXmlForLineSpan(lineIterator, lineLength, numChars) {
                 var propVals = [false, false, false];
@@ -109,7 +110,7 @@
                 var nextCharacters = "";
                 var nextPlainCharacters = "";
 
-                var fromIdx = getIteratorIndex(lineIterator, lineLength); 
+                var fromIdx = getIteratorIndex(lineIterator, lineLength);
 
                 if (numChars <= 0) {
                     return {
@@ -148,7 +149,7 @@
                     if (propChanged) {
                       // leaving bold (e.g.) also leaves italics, etc.
                       var left = false;
-                      
+
                       // check if ANY prop has to be left
                       for (var i = 0; i < propVals.length; i++) {
                         var v = propVals[i];
@@ -158,7 +159,7 @@
                           }
                         }
                       }
-                      
+
                       // if any prop was left, close and re-open the others that are active (value 'true')
                       if (left) {
                         for (var i = 0; i < propVals.length; i++) {
@@ -189,7 +190,7 @@
                     	  if (propVals[l] === ENTER && props[l] === "comment") {
                               commentsXml.selectComment(apool.numToAttrib[l][1]);
                     	  }
-                          
+
                           if (propVals[l] === ENTER || propVals[l] === STAY) {
                               openTags.unshift(l);
                               nextCharacters += getXmlStartTagForEplAttribute(apool, props, l);
@@ -203,7 +204,7 @@
                       chars--; // exclude newline at end of line, if present
                     }
 
-                    var s = lineIterator.take(chars);
+                    var s = xmlescape(lineIterator.take(chars));
 
                     nextCharacters += s;
                     nextPlainCharacters += s;
@@ -232,13 +233,13 @@
 
             /*
              * getOrderedEndTags()
-             * 
+             *
              * Get all end-tags for all open elements in the current line.
              * The function keeps the proper order of opened elements.
              * (Which might be required if we should switch to different
              * element types in the future; as long as everything is
              * <attribute>, order doesn't matter)
-             * 
+             *
              */
             function getOrderedEndTags(tags2close) {
                 var orderedEndTagsString = "";
@@ -247,7 +248,7 @@
                   for(var j=0;j<tags2close.length;j++) {
                     if(tags2close[j] == openTags[i]) {
                               openTags.shift();
-                              orderedEndTagsString += getXmlEndTagForEplAttribute(apool, props, tags2close[j]); 
+                              orderedEndTagsString += getXmlEndTagForEplAttribute(apool, props, tags2close[j]);
                       i--;
                       break;
                     }
@@ -293,7 +294,7 @@
 
             }
 
-            /* 
+            /*
              * Process URIs
              */
             if (reqOptions.regex) {
@@ -319,10 +320,7 @@
 
             xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, textIterator.remaining()).withMarkup);
 
-
-
-            // replace &, _
-            var lineContentString = xmlStringAssembler.toString().replace(/\&/g, '\&amp;');
+            var lineContentString = xmlStringAssembler.toString();
 
             var createLineElement = function(lineAttributes, lineContentString, lmkr) {
               var lineStartTag = '<line';
@@ -333,7 +331,7 @@
                         lineStartTag += lineAttributes[i][0];
                         lineStartTag += '="';
                         lineStartTag += lineAttributes[i][1];
-                        lineStartTag += '"';    		
+                        lineStartTag += '"';
                 }
               }
               lineStartTag += ">";
@@ -362,7 +360,7 @@
         var lists = []; // e.g. [[1,'bullet'], [3,'bullet'], ...]
         for (var i = 0; i < textLines.length; i++) {
           var line = _analyzeLine(textLines[i], attribLines[i], apool, reqOptions);
-          var lineContent = getLineXml(line.text, line.aline, apool);    
+          var lineContent = getLineXml(line.text, line.aline, apool);
 
           if (line.listLevel && (reqOptions.lists === true))//If we are inside a list
           {
@@ -400,9 +398,9 @@
             {
               pieces.push("</item>\n</list>\n"); // number or bullet
               lists.length--;
-            }      
+            }
             pieces.push(lineContent, "\n");
-          }    
+          }
         }
 
         for (var k = lists.length - 1; k >= 0; k--) {
@@ -412,8 +410,8 @@
         return pieces.join("");
     };
 
-    /* 
-     * 
+    /*
+     *
      * TODO outsource this function
      */
     var _analyzeLine = function (text, aline, apool, reqOptions) {
@@ -454,16 +452,16 @@
     /*
      * getPadXmlDocument
      * Get a well-formed XML Document for a given pad.
-     * 
-     * Wraps the line by line XML representing the pad content 
+     *
+     * Wraps the line by line XML representing the pad content
      * in a root element and prepends an XML declaration
-     * 
+     *
      */
     var getPadXmlDocument = function(padId, reqOptions, callback) {
         padManager.getPad(padId, function (err, pad) {
             if (ERR(err, callback)) return;
             commentsXml.init(padId);
-            
+
     		getPadXml(pad, reqOptions, function (err, xml) {
                 if (ERR(err, callback)) {
                 	return;
@@ -478,11 +476,11 @@
 
     /*
      * Define exports
-     * 
+     *
      */
-    exports.getPadXmlDocument = getPadXmlDocument; 
+    exports.getPadXmlDocument = getPadXmlDocument;
 
-	
+
 })();
 
 
