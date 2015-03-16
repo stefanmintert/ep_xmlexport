@@ -40,7 +40,8 @@
                     }
 
                     padContentXml = "<content>"  + getXmlFromAtext(pad, atext, reqOptions) + "</content>\n";
-                    callback(null, padContentXml + commentsXml);
+                    xmlComments = commentsXml.getCommentsXml();
+                    callback(null, padContentXml + xmlComments);
                   });
         } else {
               atext = pad.atext;
