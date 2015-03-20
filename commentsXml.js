@@ -30,13 +30,21 @@
 
 		var init = function(padId) {
 
+			currentPadComments = [];
+
             if (commentsPlugin) {
 
             	commentsPlugin.getComments(padId, function(err, padComments) {
-                    if (ERR(err, callback)) return;
+            		if (err) {
+            			console.log("[ERROR] error in commentsXml.js: commentsPlugin.getComments " + JSON.stringify(err));
+            			return;
+            		}
 
             		commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
-                        if (ERR(err, callback)) return;
+                		if (err) {
+                			console.log("[ERROR] error in commentsXml.js: commentsPlugin.getCommentReplies " + JSON.stringify(err));
+                			return;
+                		}
 
                 		allComments = {
                 				comments: padComments.comments,
