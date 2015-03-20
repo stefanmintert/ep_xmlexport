@@ -8,24 +8,7 @@
     var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
     var commentsXml = require("./commentsXml.js");
     var xmlescape = require("xml-escape");
-
-    //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
-    var DROPATTRIBUTES = [];
-
-
-    function getXmlStartTagForEplAttribute(apool, props, i) {
-  	  var startTag = '<attribute key="'
-		 				+ props[i]
-		 				+ '" value="'
-		 				+ apool.numToAttrib[i][1]
-		 				+ '">';
-
-	     return startTag;
-    }
-
-    function getXmlEndTagForEplAttribute(apool, props, i) {
-  	  return '</attribute><!-- /' + props[i] + ' -->';
-    }
+    var utils = require("./exportUtils.js");
 
     var getPadXml = function (pad, reqOptions, callback) {
         var atext, xml, xmlComments;
@@ -51,16 +34,6 @@
             }
     };
 
-    /*
-     * Unfortunately Changeset.stringIterator does not reveal it's current index.
-     * This function calculates the index from the original string length
-     * and the remaining number of characters.
-     *
-     */
-    var getIteratorIndex = function(stringIterator, stringLength) {
-            return (stringLength - stringIterator.remaining());
-    }
-
 
     var getXmlFromAtext = function (pad, atext, reqOptions) {
         var apool = pad.pool;
@@ -70,24 +43,12 @@
         var props = [];
         var anumMap = {};
 
-        /*
-         * Collect all property names (=attribute names) which are used in apool
-         */
-        for (var propName in apool.numToAttrib) {
-           if (apool.numToAttrib.hasOwnProperty(propName)) {
-               props.push(apool.numToAttrib[propName][0]);
-           }
-        }
+        props = utils.getPropertyNames(apool);
 
 
         function getLineXml(text, attribs, apool) {
             var lmkr = false;
             var lineAttributes = [];
-            // Use order of tags (b/i/u) as order of nesting, for simplicity
-            // and decent nesting.  For example,
-            // <b>Just bold<b> <b><i>Bold and italics</i></b> <i>Just italics</i>
-            // becomes
-            // <b>Just bold <i>Bold and italics</i></b> <i>Just italics</i>
             var xmlStringAssembler = Changeset.stringAssembler();
 
             var openTags = [];
@@ -111,7 +72,7 @@
                 var nextCharacters = "";
                 var nextPlainCharacters = "";
 
-                var fromIdx = getIteratorIndex(lineIterator, lineLength);
+                var fromIdx = utils.getIteratorIndex(lineIterator, lineLength);
 
                 if (numChars <= 0) {
                     return {
@@ -194,7 +155,7 @@
 
                           if (propVals[l] === ENTER || propVals[l] === STAY) {
                               openTags.unshift(l);
-                              nextCharacters += getXmlStartTagForEplAttribute(apool, props, l);
+                              nextCharacters += utils.getXmlStartTagForEplAttribute(apool, props, l);
                               propVals[l] = true;
                           }
                       }
@@ -244,12 +205,11 @@
              */
             function getOrderedEndTags(tags2close) {
                 var orderedEndTagsString = "";
-
                 for(var i=0;i<openTags.length;i++) {
                   for(var j=0;j<tags2close.length;j++) {
                     if(tags2close[j] == openTags[i]) {
                               openTags.shift();
-                              orderedEndTagsString += getXmlEndTagForEplAttribute(apool, props, tags2close[j]);
+                              orderedEndTagsString += utils.getXmlEndTagForEplAttribute(apool, props, tags2close[j]);
                       i--;
                       break;
                     }
@@ -260,17 +220,7 @@
 
 
 
-
-            /*
-             * anumMap maps the attribute numbers to their index in the props array.
-             * This is legacy code. In our case both numbers should always be the same.
-             * TODO: do we need anumMap anylonger? if not, remove anumMap from the entire code.
-             */
-            props.forEach(function (propName, i) {
-                if (DROPATTRIBUTES.indexOf(propName) < 0) { // Attribute shall be dropped
-                    anumMap[i] = i;
-                }
-            });
+            anumMap = utils.populateAnumMap(props);
 
             if (reqOptions.lineattribs === true) {
                 // start lineMarker (lmkr) check
@@ -299,7 +249,7 @@
              * Process URIs
              */
             if (reqOptions.regex) {
-              urls = _findURLs(text);
+              urls = utils.findURLs(text);
             }
 
             if (urls) {
@@ -309,7 +259,7 @@
                 var urlLength = url.length;
 
 
-                xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, startIndex - getIteratorIndex(textIterator, text.length)).withMarkup);
+                xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, startIndex - utils.getIteratorIndex(textIterator, text.length)).withMarkup);
 
                 var uriText = getXmlForLineSpan(textIterator, text.length, urlLength);
 
@@ -323,26 +273,8 @@
 
             var lineContentString = xmlStringAssembler.toString();
 
-            var createLineElement = function(lineAttributes, lineContentString, lmkr) {
-              var lineStartTag = '<line';
 
-              if (lmkr) {
-                for (var i = 0; i < lineAttributes.length; i=i+1) {
-                        lineStartTag += ' ';
-                        lineStartTag += lineAttributes[i][0];
-                        lineStartTag += '="';
-                        lineStartTag += lineAttributes[i][1];
-                        lineStartTag += '"';
-                }
-              }
-              lineStartTag += ">";
-              var lineEndTag = '</line>';
-
-
-              return lineStartTag + lineContentString + lineEndTag;
-            };
-
-            return createLineElement(lineAttributes, lineContentString, lmkr);
+            return utils.createLineElement(lineAttributes, lineContentString, lmkr);
 
 
         } // end getLineXml
@@ -360,7 +292,7 @@
         // => keeps track of the parents level of indentation
         var lists = []; // e.g. [[1,'bullet'], [3,'bullet'], ...]
         for (var i = 0; i < textLines.length; i++) {
-          var line = _analyzeLine(textLines[i], attribLines[i], apool, reqOptions);
+          var line = utils.analyzeLine(textLines[i], attribLines[i], apool, reqOptions);
           var lineContent = getLineXml(line.text, line.aline, apool);
 
           if (line.listLevel && (reqOptions.lists === true))//If we are inside a list
@@ -411,43 +343,6 @@
         return pieces.join("");
     };
 
-    /*
-     *
-     * TODO outsource this function
-     */
-    var _analyzeLine = function (text, aline, apool, reqOptions) {
-
-        var line = {};
-
-        // identify list
-        var lineMarker = 0;
-        line.listLevel = 0;
-        if (aline) {
-          var opIter = Changeset.opIterator(aline);
-          if (opIter.hasNext() && (reqOptions.lists === true) ) {
-            var listType = Changeset.opAttributeValue(opIter.next(), 'list', apool);
-
-            if (listType) {
-              lineMarker = 1;
-              listType = /([a-z]+)([12345678])/.exec(listType);
-              if (listType) {
-                line.listTypeName = listType[1];
-                line.listLevel = Number(listType[2]);
-              }
-            }
-          }
-        }
-        if (lineMarker) {
-          line.text = text.substring(1);
-          line.aline = Changeset.subattribution(aline, 1);
-        } else {
-          line.text = text;
-          line.aline = aline;
-        }
-
-        return line;
-    };
-
 
 
     /*
@@ -488,23 +383,4 @@
 
 
 
-// copied from ACE
-var _REGEX_WORDCHAR = /[\u0030-\u0039\u0041-\u005A\u0061-\u007A\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u0100-\u1FFF\u3040-\u9FFF\uF900-\uFDFF\uFE70-\uFEFE\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFDC]/;
-var _REGEX_SPACE = /\s/;
-var _REGEX_URLCHAR = new RegExp('(' + /[-:@a-zA-Z0-9_.,~%+\/\\?=&#;()$]/.source + '|' + _REGEX_WORDCHAR.source + ')');
-var _REGEX_URL = new RegExp(/(?:(?:https?|s?ftp|ftps|file|smb|afp|nfs|(x-)?man|gopher|txmt):\/\/|mailto:)/.source + _REGEX_URLCHAR.source + '*(?![:.,;])' + _REGEX_URLCHAR.source, 'g');
 
-// returns null if no URLs, or [[startIndex1, url1], [startIndex2, url2], ...]
-function _findURLs(text) {
-    _REGEX_URL.lastIndex = 0;
-    var urls = null;
-    var execResult;
-    while ((execResult = _REGEX_URL.exec(text))) {
-      urls = (urls || []);
-      var startIndex = execResult.index;
-      var url = execResult[0];
-      urls.push([startIndex, url]);
-    }
-
-    return urls;
-}
