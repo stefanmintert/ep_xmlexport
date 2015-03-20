@@ -225,6 +225,18 @@
 
        var aNumMap, properties, attributePool, lineIterator;
 
+       var _getPropVal = function(n) {
+    	   return propVals[n]
+       }
+
+       var _setPropVal = function(n, val) {
+    	   propVals[n] = val;
+       }
+
+       var _countPropVals = function() {
+    	   return propVals.length;
+       }
+
        var init = function(anMap, props, apool, lIterator) {
     	   propVals = [false, false, false];
            tags2close = [];
@@ -235,27 +247,12 @@
            lineIterator = lIterator;
        }
 
-
-       var getPropVal = function(n) {
-    	   return propVals[n]
-       }
-
-       var setPropVal = function(n, val) {
-    	   propVals[n] = val;
-       }
-
-       var countPropVals = function() {
-    	   return propVals.length;
-       }
-
-
-
        var getEndTagsAfterLastOp = function() {
            var tags2close = [];
-           for (var n = countPropVals() - 1; n >= 0; n--) {
-             if (getPropVal(n)) {
+           for (var n = _countPropVals() - 1; n >= 0; n--) {
+             if (_getPropVal(n)) {
                tags2close.push(n);
-               setPropVal(n, false);
+               _setPropVal(n, false);
              }
            }
 
@@ -273,8 +270,6 @@
 		   var propChanged = false;
 		   var opTextWithMarkup = "";
 		   var opTextWithoutMarkup = "";
-
-
 
 	       Changeset.eachAttribNumber(op.attribs, function (a) {
 	         if (a in aNumMap) {

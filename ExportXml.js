@@ -64,35 +64,35 @@
              *
              */
             function getXmlForLineSegment(lineIterator, lineLength, numChars) {
-                var lineSegmentWithMarkup = "";
-                var lineSegmentWithoutMarkup = "";
-
-            	utils.operationHandler.init(anumMap, props, apool, lineIterator);
-
-                var fromIdx = utils.getIteratorIndex(lineIterator, lineLength);
-
                 if (numChars <= 0) {
                     return {
                         withMarkup: "",
                         plainText:  ""
                     };
+                } else {
+                    var lineSegmentWithMarkup = "";
+                    var lineSegmentWithoutMarkup = "";
+
+                	utils.operationHandler.init(anumMap, props, apool, lineIterator);
+
+                	// current position on the line iteration
+                    var fromIdx = utils.getIteratorIndex(lineIterator, lineLength);
+
+	                var opIterator = Changeset.opIterator(Changeset.subattribution(attribs, fromIdx, fromIdx + numChars));
+
+	                // begin iteration over spans (=operations) in line segment
+	                while (opIterator.hasNext()) {
+	                  var currentOp = opIterator.next();
+	                  var opXml = utils.operationHandler.getXml(currentOp);
+	                  lineSegmentWithMarkup += opXml.withMarkup;
+	                  lineSegmentWithoutMarkup += opXml.plainText;
+	                } // end iteration over spans in line segment
+
+	                return {
+	                    withMarkup: lineSegmentWithMarkup + utils.operationHandler.getEndTagsAfterLastOp(),
+	                    plainText:  lineSegmentWithoutMarkup
+	                };
                 }
-
-                var opIterator = Changeset.opIterator(Changeset.subattribution(attribs, fromIdx, fromIdx + numChars));
-
-                // begin iteration over spans in line segment
-                while (opIterator.hasNext()) {
-                  var currentOp = opIterator.next();
-                  var opXml = utils.operationHandler.getXml(currentOp);
-                  lineSegmentWithMarkup += opXml.withMarkup;
-                  lineSegmentWithoutMarkup += opXml.plainText;
-                } // end iteration over spans in line segment
-
-
-                return {
-                    withMarkup: lineSegmentWithMarkup + utils.operationHandler.getEndTagsAfterLastOp(),
-                    plainText:  lineSegmentWithoutMarkup
-                };
             } // end getXmlForLineSegment
 
 
