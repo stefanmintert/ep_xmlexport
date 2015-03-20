@@ -50,27 +50,22 @@
             var lmkr = false;
             var lineAttributes = [];
             var xmlStringAssembler = Changeset.stringAssembler();
-
-            var openTags = [];
             var urls;
             var textIterator = Changeset.stringIterator(text);
 
+            utils.openElements.init(); // no elements are open
+
+
             /*
-             * getXmlForLineSpan
-             * Gets text with length of 'numChars' starting from index 'fromIdx'.
+             * getXmlForLineSegment
+             * Gets text with length of 'numChars' starting from current position of lineIterator.
              * Returns both, text with markup and plain text as literal object
              * { withMarkup: ..., plainText: ... }
              *
              */
-            function getXmlForLineSpan(lineIterator, lineLength, numChars) {
-                var propVals = [false, false, false];
-                var ENTER = 1;
-                var STAY = 2;
-                var LEAVE = 0;
+            function getXmlForLineSegment(lineIterator, lineLength, numChars) {
 
-                var tags2close = [];
-                var nextCharacters = "";
-                var nextPlainCharacters = "";
+            	utils.operationHandler.init(anumMap, props, apool, lineIterator);
 
                 var fromIdx = utils.getIteratorIndex(lineIterator, lineLength);
 
@@ -83,140 +78,25 @@
 
                 var opIterator = Changeset.opIterator(Changeset.subattribution(attribs, fromIdx, fromIdx + numChars));
 
-
-                var handleOp = function(op) {
-                    var propChanged = false;
-                    Changeset.eachAttribNumber(op.attribs, function (a) {
-                      if (a in anumMap) {
-                        var i = anumMap[a]; // i = 0 => bold, etc.
-                        if (!propVals[i]) {
-                          propVals[i] = ENTER;
-                          propChanged = true;
-                        } else {
-                          propVals[i] = STAY;
-                        }
-                      }
-                    });
-                    for (var j = 0; j < propVals.length; j++) {
-                      if (propVals[j] === true) {
-                        propVals[j] = LEAVE;
-                        propChanged = true;
-                      } else if (propVals[j] === STAY) {
-                        propVals[j] = true; // set it back
-                      }
-                    }
-
-                    // now each member of propVal is in {false,LEAVE,ENTER,true}
-                    // according to what happens at start of span
-                    if (propChanged) {
-                      // leaving bold (e.g.) also leaves italics, etc.
-                      var left = false;
-
-                      // check if ANY prop has to be left
-                      for (var i = 0; i < propVals.length; i++) {
-                        var v = propVals[i];
-                        if (!left) {
-                          if (v === LEAVE) {
-                            left = true;
-                          }
-                        }
-                      }
-
-                      // if any prop was left, close and re-open the others that are active (value 'true')
-                      if (left) {
-                        for (var i = 0; i < propVals.length; i++) {
-                            var v = propVals[i];
-                            if (v === true) {
-                                propVals[i] = STAY; // tag will be closed and re-opened
-                            }
-                        }
-                      }
-
-                      tags2close = [];
-
-                      for (var k = propVals.length - 1; k >= 0; k--) {
-                        if (propVals[k] === LEAVE) {
-                          tags2close.push(k);
-                          propVals[k] = false;
-                        } else if (propVals[k] === STAY) {
-                          tags2close.push(k);
-                        }
-                      }
-
-                      nextCharacters += getOrderedEndTags(tags2close);
-
-
-                      for (var l = 0; l < propVals.length; l++) {
-
-                    	  // If entering a new comment, select comment for later translation to XML
-                    	  if (propVals[l] === ENTER && props[l] === "comment") {
-                              commentsXml.selectComment(apool.numToAttrib[l][1]);
-                    	  }
-
-                          if (propVals[l] === ENTER || propVals[l] === STAY) {
-                              openTags.unshift(l);
-                              nextCharacters += utils.getXmlStartTagForEplAttribute(apool, props, l);
-                              propVals[l] = true;
-                          }
-                      }
-                      // propVals is now all {true,false} again
-                    } // end if (propChanged)
-                    var chars = op.chars;
-                    if (op.lines) {
-                      chars--; // exclude newline at end of line, if present
-                    }
-
-                    var s = xmlescape(lineIterator.take(chars));
-
-                    nextCharacters += s;
-                    nextPlainCharacters += s;
-                };
-
                 while (opIterator.hasNext()) {
                   var currentOp = opIterator.next();
-                  handleOp(currentOp);
+                  utils.operationHandler.processOp(currentOp);
                 } // end iteration over spans in line
 
                 tags2close = [];
-                for (var n = propVals.length - 1; n >= 0; n--) {
-                  if (propVals[n]) {
+                for (var n = utils.operationHandler.countPropVals() - 1; n >= 0; n--) {
+                  if (utils.operationHandler.getPropVal(n)) {
                     tags2close.push(n);
-                    propVals[n] = false;
+                    utils.operationHandler.setPropVal(n, false);
                   }
                 }
-
-                nextCharacters += getOrderedEndTags(tags2close);
 
                 return {
-                    withMarkup: nextCharacters,
-                    plainText:  nextPlainCharacters
+                    withMarkup: utils.operationHandler.getLineSegmentWithMarkup() + utils.getOrderedEndTags(tags2close, apool, props),
+                    plainText:  utils.operationHandler.getLineSegmentWithoutMarkup()
                 };
-            } // end getXmlForLineSpan
+            } // end getXmlForLineSegment
 
-            /*
-             * getOrderedEndTags()
-             *
-             * Get all end-tags for all open elements in the current line.
-             * The function keeps the proper order of opened elements.
-             * (Which might be required if we should switch to different
-             * element types in the future; as long as everything is
-             * <attribute>, order doesn't matter)
-             *
-             */
-            function getOrderedEndTags(tags2close) {
-                var orderedEndTagsString = "";
-                for(var i=0;i<openTags.length;i++) {
-                  for(var j=0;j<tags2close.length;j++) {
-                    if(tags2close[j] == openTags[i]) {
-                              openTags.shift();
-                              orderedEndTagsString += utils.getXmlEndTagForEplAttribute(apool, props, tags2close[j]);
-                      i--;
-                      break;
-                    }
-                  }
-                }
-                return orderedEndTagsString;
-            }
 
 
 
@@ -259,9 +139,9 @@
                 var urlLength = url.length;
 
 
-                xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, startIndex - utils.getIteratorIndex(textIterator, text.length)).withMarkup);
+                xmlStringAssembler.append(getXmlForLineSegment(textIterator, text.length, startIndex - utils.getIteratorIndex(textIterator, text.length)).withMarkup);
 
-                var uriText = getXmlForLineSpan(textIterator, text.length, urlLength);
+                var uriText = getXmlForLineSegment(textIterator, text.length, urlLength);
 
                 xmlStringAssembler.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
               });
@@ -269,7 +149,7 @@
 
 
 
-            xmlStringAssembler.append(getXmlForLineSpan(textIterator, text.length, textIterator.remaining()).withMarkup);
+            xmlStringAssembler.append(getXmlForLineSegment(textIterator, text.length, textIterator.remaining()).withMarkup);
 
             var lineContentString = xmlStringAssembler.toString();
 

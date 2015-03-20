@@ -21,6 +21,8 @@
 
 (function() {
     var Changeset = require("ep_etherpad-lite/static/js/Changeset");
+    var xmlescape = require("xml-escape");
+    var commentsXml = require("./commentsXml.js");
 
     //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
     var DROPATTRIBUTES = [];
@@ -165,6 +167,227 @@
    };
 
 
+   /*
+    * openElements
+    *
+    * keeps track of opened, not yet closed elements.
+    *
+    */
+   var openElements = (function() {
+	   var openElems = [];
+
+	   var init = function() {
+		   openElems = [];
+	   }
+
+
+       var count = function() {
+    	   return openElems.length;
+       }
+
+       var get = function(n) {
+    	   return openElems[n];
+       }
+
+       var shift = function() {
+    	   return openElems.shift();
+       }
+
+       var unshift = function(val) {
+    	   return openElems.unshift(val);
+       }
+
+	   return {
+		   init: init,
+		   count: count,
+		   get: get,
+		   shift: shift,
+		   unshift: unshift
+	   }
+
+   })();
+
+
+   var operationHandler = (function() {
+       var ENTER = 1;
+       var STAY = 2;
+       var LEAVE = 0;
+
+       var propVals = [false, false, false];
+       var tags2close = [];
+       var lineSegmentWithMarkup = "";
+       var lineSegmentWithoutMarkup = "";
+
+
+       var aNumMap, properties, attributePool, lineIterator;
+
+       var init = function(anMap, props, apool, lIterator) {
+    	   propVals = [false, false, false];
+           tags2close = [];
+           lineSegmentWithMarkup = "";
+           lineSegmentWithoutMarkup = "";
+
+           aNumMap = anMap;
+           properties = props;
+           attributePool = apool;
+           lineIterator = lIterator;
+       }
+
+
+       var getPropVal = function(n) {
+    	   return propVals[n]
+       }
+
+       var setPropVal = function(n, val) {
+    	   propVals[n] = val;
+       }
+
+       var countPropVals = function() {
+    	   return propVals.length;
+       }
+
+       var getLineSegmentWithMarkup = function() {
+    	   return lineSegmentWithMarkup;
+       }
+
+       var getLineSegmentWithoutMarkup = function() {
+    	   return lineSegmentWithoutMarkup;
+       }
+
+
+
+	   var processOp = function(op) {
+		   var propChanged = false;
+	       Changeset.eachAttribNumber(op.attribs, function (a) {
+	         if (a in aNumMap) {
+	           var i = aNumMap[a]; // i = 0 => bold, etc.
+	           if (!propVals[i]) {
+	             propVals[i] = ENTER;
+	             propChanged = true;
+	           } else {
+	             propVals[i] = STAY;
+	           }
+	         }
+	       });
+
+	       for (var j = 0; j < propVals.length; j++) {
+	         if (propVals[j] === true) {
+	           propVals[j] = LEAVE;
+	           propChanged = true;
+	         } else if (propVals[j] === STAY) {
+	           propVals[j] = true; // set it back
+	         }
+	       }
+
+	       // now each member of propVal is in {false,LEAVE,ENTER,true}
+	       // according to what happens at start of span
+	       if (propChanged) {
+	         // leaving bold (e.g.) also leaves italics, etc.
+	         var left = false;
+
+	         // check if ANY prop has to be left
+	         for (var i = 0; i < propVals.length; i++) {
+	           var v = propVals[i];
+	           if (!left) {
+	             if (v === LEAVE) {
+	               left = true;
+	             }
+	           }
+	         }
+
+	         // if any prop was left, close and re-open the others that are active (value 'true')
+	         if (left) {
+	           for (var i = 0; i < propVals.length; i++) {
+	               var v = propVals[i];
+	               if (v === true) {
+	                   propVals[i] = STAY; // tag will be closed and re-opened
+	               }
+	           }
+	         }
+
+	         tags2close = [];
+
+	         for (var k = propVals.length - 1; k >= 0; k--) {
+	           if (propVals[k] === LEAVE) {
+	             tags2close.push(k);
+	             propVals[k] = false;
+	           } else if (propVals[k] === STAY) {
+	             tags2close.push(k);
+	           }
+	         }
+
+
+
+             lineSegmentWithMarkup += getOrderedEndTags(tags2close, attributePool, properties);
+
+
+	         for (var l = 0; l < propVals.length; l++) {
+
+	       	  // If entering a new comment, select comment for later translation to XML
+	       	  if (propVals[l] === ENTER && properties[l] === "comment") {
+	                 commentsXml.selectComment(attributePool.numToAttrib[l][1]);
+	       	  }
+
+	             if (propVals[l] === ENTER || propVals[l] === STAY) {
+	                 openElements.unshift(l);
+	                 lineSegmentWithMarkup += getXmlStartTagForEplAttribute(attributePool, properties, l);
+	                 propVals[l] = true;
+	             }
+	         }
+	         // propVals is now all {true,false} again
+	       } // end if (propChanged)
+	       var chars = op.chars;
+	       if (op.lines) {
+	         chars--; // exclude newline at end of line, if present
+	       }
+
+	       var s = xmlescape(lineIterator.take(chars));
+
+	       lineSegmentWithMarkup += s;
+	       lineSegmentWithoutMarkup += s;
+	   };
+
+
+	   return {
+		   countPropVals: countPropVals,
+		   getPropVal: getPropVal,
+		   init: init,
+		   processOp: processOp,
+		   setPropVal: setPropVal,
+		   getLineSegmentWithMarkup: getLineSegmentWithMarkup,
+		   getLineSegmentWithoutMarkup: getLineSegmentWithoutMarkup
+	   }
+
+   })();
+
+
+   /*
+    * getOrderedEndTags()
+    *
+    * Get all end-tags for all open elements in the current line.
+    * The function keeps the proper order of opened elements.
+    * (Which might be required if we should switch to different
+    * element types in the future; as long as everything is
+    * <attribute>, order doesn't matter)
+    *
+    */
+   function getOrderedEndTags(tags2close, apool, props) {
+       var orderedEndTagsString = "";
+       for(var i=0; i < openElements.count(); i++) {
+         for(var j=0;j<tags2close.length;j++) {
+           if(tags2close[j] == openElements.get(i)) {
+             openElements.shift();
+             orderedEndTagsString += getXmlEndTagForEplAttribute(apool, props, tags2close[j]);
+             i--;
+             break;
+           }
+         }
+       }
+       return orderedEndTagsString;
+   }
+
+
+
     /*
      * Define exports
      *
@@ -177,7 +400,12 @@
     exports.populateAnumMap = populateAnumMap;
     exports.findURLs = findURLs;
     exports.analyzeLine = analyzeLine;
+    exports.operationHandler = operationHandler;
+    exports.getOrderedEndTags = getOrderedEndTags;
+    exports.openElements = openElements;
     /*
+    exports. = ;
+    exports. = ;
     exports. = ;
     exports. = ;
 	*/
