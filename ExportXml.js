@@ -64,6 +64,8 @@
              *
              */
             function getXmlForLineSegment(lineIterator, lineLength, numChars) {
+                var lineSegmentWithMarkup = "";
+                var lineSegmentWithoutMarkup = "";
 
             	utils.operationHandler.init(anumMap, props, apool, lineIterator);
 
@@ -78,22 +80,18 @@
 
                 var opIterator = Changeset.opIterator(Changeset.subattribution(attribs, fromIdx, fromIdx + numChars));
 
+                // begin iteration over spans in line segment
                 while (opIterator.hasNext()) {
                   var currentOp = opIterator.next();
-                  utils.operationHandler.processOp(currentOp);
-                } // end iteration over spans in line
+                  var opXml = utils.operationHandler.getXml(currentOp);
+                  lineSegmentWithMarkup += opXml.withMarkup;
+                  lineSegmentWithoutMarkup += opXml.plainText;
+                } // end iteration over spans in line segment
 
-                tags2close = [];
-                for (var n = utils.operationHandler.countPropVals() - 1; n >= 0; n--) {
-                  if (utils.operationHandler.getPropVal(n)) {
-                    tags2close.push(n);
-                    utils.operationHandler.setPropVal(n, false);
-                  }
-                }
 
                 return {
-                    withMarkup: utils.operationHandler.getLineSegmentWithMarkup() + utils.getOrderedEndTags(tags2close, apool, props),
-                    plainText:  utils.operationHandler.getLineSegmentWithoutMarkup()
+                    withMarkup: lineSegmentWithMarkup + utils.operationHandler.getEndTagsAfterLastOp(),
+                    plainText:  lineSegmentWithoutMarkup
                 };
             } // end getXmlForLineSegment
 

@@ -208,6 +208,13 @@
    })();
 
 
+
+   /*
+    * operationHandler
+    *
+    * Handles the transformation of operations to XML
+    */
+
    var operationHandler = (function() {
        var ENTER = 1;
        var STAY = 2;
@@ -215,17 +222,12 @@
 
        var propVals = [false, false, false];
        var tags2close = [];
-       var lineSegmentWithMarkup = "";
-       var lineSegmentWithoutMarkup = "";
-
 
        var aNumMap, properties, attributePool, lineIterator;
 
        var init = function(anMap, props, apool, lIterator) {
     	   propVals = [false, false, false];
            tags2close = [];
-           lineSegmentWithMarkup = "";
-           lineSegmentWithoutMarkup = "";
 
            aNumMap = anMap;
            properties = props;
@@ -246,18 +248,34 @@
     	   return propVals.length;
        }
 
-       var getLineSegmentWithMarkup = function() {
-    	   return lineSegmentWithMarkup;
+
+
+       var getEndTagsAfterLastOp = function() {
+           var tags2close = [];
+           for (var n = countPropVals() - 1; n >= 0; n--) {
+             if (getPropVal(n)) {
+               tags2close.push(n);
+               setPropVal(n, false);
+             }
+           }
+
+           return getOrderedEndTags(tags2close, attributePool, properties);
        }
 
-       var getLineSegmentWithoutMarkup = function() {
-    	   return lineSegmentWithoutMarkup;
-       }
 
-
-
-	   var processOp = function(op) {
+       /*
+        * getXml(operation)
+        *
+        * Transforms a given operation to XML.
+        *
+        */
+	   var getXml = function(op) {
 		   var propChanged = false;
+		   var opTextWithMarkup = "";
+		   var opTextWithoutMarkup = "";
+
+
+
 	       Changeset.eachAttribNumber(op.attribs, function (a) {
 	         if (a in aNumMap) {
 	           var i = aNumMap[a]; // i = 0 => bold, etc.
@@ -318,7 +336,7 @@
 
 
 
-             lineSegmentWithMarkup += getOrderedEndTags(tags2close, attributePool, properties);
+	         opTextWithMarkup = getOrderedEndTags(tags2close, attributePool, properties);
 
 
 	         for (var l = 0; l < propVals.length; l++) {
@@ -330,7 +348,7 @@
 
 	             if (propVals[l] === ENTER || propVals[l] === STAY) {
 	                 openElements.unshift(l);
-	                 lineSegmentWithMarkup += getXmlStartTagForEplAttribute(attributePool, properties, l);
+	                 opTextWithMarkup += getXmlStartTagForEplAttribute(attributePool, properties, l);
 	                 propVals[l] = true;
 	             }
 	         }
@@ -343,19 +361,17 @@
 
 	       var s = xmlescape(lineIterator.take(chars));
 
-	       lineSegmentWithMarkup += s;
-	       lineSegmentWithoutMarkup += s;
+	       return {
+	    	   withMarkup: opTextWithMarkup + s,
+	    	   plainText: s
+	       }
 	   };
 
 
 	   return {
-		   countPropVals: countPropVals,
-		   getPropVal: getPropVal,
 		   init: init,
-		   processOp: processOp,
-		   setPropVal: setPropVal,
-		   getLineSegmentWithMarkup: getLineSegmentWithMarkup,
-		   getLineSegmentWithoutMarkup: getLineSegmentWithoutMarkup
+		   getXml: getXml,
+		   getEndTagsAfterLastOp: getEndTagsAfterLastOp
 	   }
 
    })();
