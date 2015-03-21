@@ -48,7 +48,7 @@
     };
 
 
-    var getXmlStartTagForEplAttribute = function(apool, props, i) {
+    var _getXmlStartTagForEplAttribute = function(apool, props, i) {
   	  var startTag = '<attribute key="'
 		 				+ props[i]
 		 				+ '" value="'
@@ -58,7 +58,7 @@
 	     return startTag;
     }
 
-    var getXmlEndTagForEplAttribute = function(apool, props, i) {
+    var _getXmlEndTagForEplAttribute = function(apool, props, i) {
   	  return '</attribute><!-- /' + props[i] + ' -->';
     }
 
@@ -256,7 +256,7 @@
              }
            }
 
-           return getOrderedEndTags(tags2close, attributePool, properties);
+           return _getOrderedEndTags(tags2close, attributePool, properties);
        }
 
 
@@ -331,7 +331,7 @@
 
 
 
-	         opTextWithMarkup = getOrderedEndTags(tags2close, attributePool, properties);
+	         opTextWithMarkup = _getOrderedEndTags(tags2close, attributePool, properties);
 
 
 	         for (var l = 0; l < propVals.length; l++) {
@@ -343,7 +343,7 @@
 
 	             if (propVals[l] === ENTER || propVals[l] === STAY) {
 	                 openElements.unshift(l);
-	                 opTextWithMarkup += getXmlStartTagForEplAttribute(attributePool, properties, l);
+	                 opTextWithMarkup += _getXmlStartTagForEplAttribute(attributePool, properties, l);
 	                 propVals[l] = true;
 	             }
 	         }
@@ -373,7 +373,7 @@
 
 
    /*
-    * getOrderedEndTags()
+    * _getOrderedEndTags()
     *
     * Get all end-tags for all open elements in the current line.
     * The function keeps the proper order of opened elements.
@@ -382,13 +382,13 @@
     * <attribute>, order doesn't matter)
     *
     */
-   function getOrderedEndTags(tags2close, apool, props) {
+   function _getOrderedEndTags(tags2close, apool, props) {
        var orderedEndTagsString = "";
        for(var i=0; i < openElements.count(); i++) {
          for(var j=0;j<tags2close.length;j++) {
            if(tags2close[j] == openElements.get(i)) {
              openElements.shift();
-             orderedEndTagsString += getXmlEndTagForEplAttribute(apool, props, tags2close[j]);
+             orderedEndTagsString += _getXmlEndTagForEplAttribute(apool, props, tags2close[j]);
              i--;
              break;
            }
@@ -404,21 +404,12 @@
      *
      */
     exports.createLineElement = createLineElement;
-    exports.getXmlStartTagForEplAttribute = getXmlStartTagForEplAttribute;
-    exports.getXmlEndTagForEplAttribute = getXmlEndTagForEplAttribute;
     exports.getIteratorIndex = getIteratorIndex;
     exports.getPropertyNames = getPropertyNames;
     exports.populateAnumMap = populateAnumMap;
     exports.findURLs = findURLs;
     exports.analyzeLine = analyzeLine;
     exports.operationHandler = operationHandler;
-    exports.getOrderedEndTags = getOrderedEndTags;
     exports.openElements = openElements;
-    /*
-    exports. = ;
-    exports. = ;
-    exports. = ;
-    exports. = ;
-	*/
 
 })();
