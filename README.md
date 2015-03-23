@@ -1,6 +1,6 @@
 # XML Export for Etherpad Lite
 
-This plug-in lets you export the content of a pad as XML. 
+This plug-in lets you export the content of a pad as XML.
 
 ## Download and Install
 
@@ -12,15 +12,15 @@ Available on [github](https://github.com/stefanmintert/ep_xmlexport) and [npm](h
 
 ## Usage
 
-You can use the plug-in via a graphical UI or via HTTP API calls. 
+You can use the plug-in via a graphical UI or via HTTP API calls.
 
 ## UI
 
-The plug-in adds itself to the list of export formats. Choose `XML` from list of formats. 
+The plug-in adds itself to the list of export formats. Choose `XML` from list of formats.
 
 You can't control the XML output format using the GUI. If you need something different than the default XML, use the HTTP API instead.
 
-TODO: Make the default configurable. 
+TODO: Make the default configurable.
 
 
 ## HTTP API
@@ -39,13 +39,13 @@ TODO: Make the default configurable.
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lineattribs=true
 
-Removes the line marker (asterisk with attribute lmkr) from a line and adds all lmkr attributes as XML attributes to the `line` element. `key`/`value` become the name/value of the correpsonding line attribute.  
+Removes the line marker (asterisk with attribute lmkr) from a line and adds all lmkr attributes as XML attributes to the `line` element. `key`/`value` become the name/value of the correpsonding line attribute.
 
 #### Control output of lists markup, requesting extended EPL XML
 
     http://<hostPort>/p/<padName>/<revision>/export/xml?lists=true
 
-Generates `list` and `item` elements. 
+Generates `list` and `item` elements.
 
 #### Regex matching of URIs, requesting extended EPL XML
 
@@ -53,9 +53,9 @@ Generates `list` and `item` elements.
 
 Generates markup for [URIs](http://www.ietf.org/rfc/rfc3986.txt). This feature is implemented because the original code, which this plug-in relies on, does a regex search for URIs; so I just kept this feature.
 
-But the markup is generalized. For every URI in the pad text you'll get the following markup on export: `<matched-text key="uri" value="...">...</markup-text`. 
+But the markup is generalized. For every URI in the pad text you'll get the following markup on export: `<matched-text key="uri" value="...">...</markup-text`.
 
-The generalized markup allows for an easy, later extension to match more patterns. 
+The generalized markup allows for an easy, later extension to match more patterns.
 
 #### Pretty printing XML
 
@@ -69,7 +69,7 @@ I suggest to use pretty printing only for debugging purposes. It might insert so
 
 #### MIME type and encoding
 
-Currently the MIME type `plain/xml` is used. A switch to `application/xml` might be reasonable. 
+Currently the MIME type `plain/xml` is used. A switch to `application/xml` might be reasonable.
 
 Little is known about dealing with the correct encoding ([BOM, XML declaration, HTTP header](http://www.w3.org/TR/REC-xml/#charencoding)) in EPL. If you think I'm doing wrong, let me know (fork & PR appreciated).
 
@@ -81,7 +81,7 @@ You have the choice of exporting *generic EPL XML* or *extended EPL XML* (non-ge
 
 ##### Generic EPL XML (default)
 
-The generic export mode simply translates every line of pad content into a `line` element in XML, and every pad attribute into an `attribute` element in XML. `attribute` *elements* carry `key` and `value` XML *attributes*. (Don't get confused: EPL attributes are transformed to XML elements named "attribute"; their key/values are transformed to XML attributes.) 
+The generic export mode simply translates every line of pad content into a `line` element in XML, and every pad attribute into an `attribute` element in XML. `attribute` *elements* carry `key` and `value` XML *attributes*. (Don't get confused: EPL attributes are transformed to XML elements named "attribute"; their key/values are transformed to XML attributes.)
 
 You can validate the generic EPL XML against the [epl.dtd](epl.dtd).
 
@@ -92,11 +92,11 @@ The XML format changes if at least one of the output control parameters are set 
 There's only an experimental DTD for extended EPL XML: [epl-x.dtd](epl-x.dtd). Why experimental? Because the XML format changes with every new plug-in that introduces a new line marker attribute. BTW: The '-x' means "extended", not "experimental".
 
 **Q: epl-x or epl? Which DTD should I use?**
-**A:** Of course the answer is: That depends! epl.dtd seems to be pretty stable, and it should support a predictable output format. I simply try to export any part of the pad content in a canonical XML format. 
+**A:** Of course the answer is: That depends! epl.dtd seems to be pretty stable, and it should support a predictable output format. I simply try to export any part of the pad content in a canonical XML format.
 
-epl-x.dtd on the other hand contains some *decisions* that might be subject to discussion. What's "correct" handling of lists isn't easy to define, so maybe you want to deal with lists on your own. EPL allows some weird lists indentations. How should the plug-in behave in such a case? The plug-in relies on code from the latex plug-in to do some "reasonable" lists conversion. Some like it, some don't. 
+epl-x.dtd on the other hand contains some *decisions* that might be subject to discussion. What's "correct" handling of lists isn't easy to define, so maybe you want to deal with lists on your own. EPL allows some weird lists indentations. How should the plug-in behave in such a case? The plug-in relies on code from the latex plug-in to do some "reasonable" lists conversion. Some like it, some don't.
 
-I suggest to use as much from the epl-x export format as you like. I'll try to give you as much control as possible. 
+I suggest to use as much from the epl-x export format as you like. I'll try to give you as much control as possible.
 
 ## Exporting Comments
 
@@ -172,7 +172,7 @@ exports [heading-extended.xml](./samples/heading-extended.xml)
 
 #### Generic EPL-XML
 
-The request 
+The request
 
     http://<hostPort>/p/<padName>/export/xml
 
@@ -272,20 +272,20 @@ exports [comment-reply.xml](./samples/comment-reply.xml)
 
 ## Legal Information
 
-The work on this plug-in began as a fork of <https://github.com/edy/ep_latexexport>, which is available under an Apache license. 
+The work on this plug-in began as a fork of <https://github.com/edy/ep_latexexport>, which is available under an Apache license.
 
 It's now a project on it's own with significant changes. Furthermore I plan a major re-factoring of the current code.
 
 My own part of work is available under the following license.
 
        Copyright 2015 Stefan Mintert
-    
+
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
        You may obtain a copy of the License at
-    
+
          http://www.apache.org/licenses/LICENSE-2.0
-    
+
        Unless required by applicable law or agreed to in writing, software
        distributed under the License is distributed on an "AS IS" BASIS,
        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -294,6 +294,11 @@ My own part of work is available under the following license.
 
 
 ## Version history
+
+### 2.1.4
+
+* Some bug fixing
+* Added support for exporting [line height](https://github.com/JohnMcLear/ep_line_height) (epl-x.dtd was changed)
 
 ### 2.1.0
 
