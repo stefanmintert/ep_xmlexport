@@ -22,7 +22,7 @@
             if (ERR(err, callback)) return;
             commentsXml.init(padId);
 
-    		getPadXml(pad, reqOptions, function (err, xml) {
+    		getContentAndCommentsXml(pad, reqOptions, function (err, xml) {
                 if (ERR(err, callback)) {
                 	return;
                 } else {
@@ -35,12 +35,11 @@
 
 
     /*
-     * getPadXml
-     * Returns an XML fragment, representing each line of
-     * a pad in a corresponding XML element.
-     * The result is not wellformed.
+     * getContentAndCommentsXml
+     * Returns an XML fragment for the requested pad revision with pad contents and comments.
+     * The result is not well-formed.
      */
-    var getPadXml = function (pad, reqOptions, callback) {
+    var getContentAndCommentsXml = function (pad, reqOptions, callback) {
         var atext, xml, xmlComments;
         var revNum = reqOptions.revision;
 
@@ -52,12 +51,12 @@
                             atext = revisionAtext;
                     }
 
-                    padContentXml = "<content>"  + getXmlFromAtext(pad.pool, atext, reqOptions) + "</content>\n";
+                    padContentXml = "<content>"  + getPadLinesXml(pad.pool, atext, reqOptions) + "</content>\n";
                     xmlComments = commentsXml.getCommentsXml();
                     callback(null, padContentXml + xmlComments);
                   });
         } else {
-              padContentXml = "<content>"  + getXmlFromAtext(pad.pool, pad.atext, reqOptions) + "</content>\n";
+              padContentXml = "<content>"  + getPadLinesXml(pad.pool, pad.atext, reqOptions) + "</content>\n";
               xmlComments = commentsXml.getCommentsXml();
               callback(null, padContentXml + xmlComments);
             }
@@ -65,11 +64,14 @@
 
 
     /*
-     * getXmlFromAtext
-     * Returns an XML representation for the atext (attribs+text) of a pad.
+     * getPadLinesXml
+     * Returns an XML fragment for the content (atext = attribs+text) of a pad.
+     * The result is just a sequence of <line>...</line> elements, except if
+     * lists up-translation is turned-on.
      *
+     * The result is not well-formed.
      */
-    var getXmlFromAtext = function (apool, atext, reqOptions) {
+    var getPadLinesXml = function (apool, atext, reqOptions) {
         var textLines = atext.text.slice(0, -1).split('\n');
         var attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
         var pieces = [];
@@ -92,7 +94,7 @@
 
         for (var i = 0; i < textLines.length; i++) {
           var line = utils.analyzeLine(textLines[i], attribLines[i], apool, reqOptions);
-          var lineContent = getLineXml(line.text, line.aline, apool, reqOptions);
+          var lineContent = getOneLineXml(line.text, line.aline, apool, reqOptions);
 
           if (line.listLevel && (reqOptions.lists === true))//If we are inside a list
           {
@@ -145,10 +147,10 @@
 
 
     /*
-     * getLineXml
+     * getOneLineXml
      * Returns an XML representation for a pad line.
      */
-    var getLineXml = function(text, attribs, apool, reqOptions) {
+    var getOneLineXml = function(text, attribs, apool, reqOptions) {
         var lmkr = false;
         var lineAttributes = [];
         var xmlStringAssembler = Changeset.stringAssembler();
@@ -164,13 +166,13 @@
 
 
         /*
-         * getXmlForLineSegment
+         * getLineSegmentXml
          * Gets text with length of 'numChars' starting from current position of lineIterator.
          * Returns both, text with markup and plain text as literal object
          * { withMarkup: ..., plainText: ... }
          *
          */
-        function getXmlForLineSegment(lineIterator, lineLength, numChars) {
+        function getLineSegmentXml(lineIterator, lineLength, numChars) {
             if (numChars <= 0) {
                 return {
                     withMarkup: "",
@@ -200,7 +202,7 @@
                     plainText:  lineSegmentWithoutMarkup
                 };
             }
-        } // end getXmlForLineSegment
+        } // end getLineSegmentXml
 
 
         if (reqOptions.lineattribs === true) {
@@ -240,9 +242,9 @@
             var urlLength = url.length;
 
 
-            xmlStringAssembler.append(getXmlForLineSegment(textIterator, text.length, startIndex - utils.getIteratorIndex(textIterator, text.length)).withMarkup);
+            xmlStringAssembler.append(getLineSegmentXml(textIterator, text.length, startIndex - utils.getIteratorIndex(textIterator, text.length)).withMarkup);
 
-            var uriText = getXmlForLineSegment(textIterator, text.length, urlLength);
+            var uriText = getLineSegmentXml(textIterator, text.length, urlLength);
 
             xmlStringAssembler.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
           });
@@ -250,7 +252,7 @@
 
 
 
-        xmlStringAssembler.append(getXmlForLineSegment(textIterator, text.length, textIterator.remaining()).withMarkup);
+        xmlStringAssembler.append(getLineSegmentXml(textIterator, text.length, textIterator.remaining()).withMarkup);
 
         var lineContentString = xmlStringAssembler.toString();
 
@@ -258,7 +260,7 @@
         return utils.createLineElement(lineAttributes, lineContentString, lmkr);
 
 
-    } // end getLineXml
+    } // end getOneLineXml
 
 
 
