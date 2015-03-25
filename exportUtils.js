@@ -48,18 +48,13 @@
 	};
 
 
-	var _getXmlStartTagForEplAttribute = function(apool, props, i) {
-		var startTag = '<attribute key="'
-			+ props[i]
-		+ '" value="'
-		+ apool.numToAttrib[i][1]
-		+ '">';
+	var _getXmlStartTagForEplAttribute = function(key, val) {
 
-		return startTag;
+		return '<attribute key="' + key + '" value="' + val + '">';
 	}
 
-	var _getXmlEndTagForEplAttribute = function(apool, props, i) {
-		return '</attribute><!-- /' + props[i] + ' -->';
+	var _getXmlEndTagForEplAttribute = function(key) {
+		return '</attribute><!-- /' + key + ' -->';
 	}
 
 	/*
@@ -343,7 +338,9 @@
 
 					if (propVals[l] === ENTER || propVals[l] === STAY) {
 						openElements.unshift(l);
-						opTextWithMarkup += _getXmlStartTagForEplAttribute(attributePool, properties, l);
+						var aKey = properties[l];
+						var aVal = attributePool.numToAttrib[l][1];
+						opTextWithMarkup += _getXmlStartTagForEplAttribute(aKey, aVal);
 						propVals[l] = true;
 					}
 				}
@@ -388,7 +385,7 @@
 			for(var j=0;j<tags2close.length;j++) {
 				if(tags2close[j] == openElements.get(i)) {
 					openElements.shift();
-					orderedEndTagsString += _getXmlEndTagForEplAttribute(apool, props, tags2close[j]);
+					orderedEndTagsString += _getXmlEndTagForEplAttribute(props[tags2close[j]]);
 					i--;
 					break;
 				}
