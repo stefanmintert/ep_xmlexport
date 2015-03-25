@@ -295,6 +295,10 @@ My own part of work is available under the following license.
 
 ## Version history
 
+### 2.1.5
+
+* Code cleaning. Refactoring.
+
 ### 2.1.4
 
 * Some bug fixing
