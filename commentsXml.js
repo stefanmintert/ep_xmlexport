@@ -1,4 +1,5 @@
 (function() {
+	var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
 
     var commentsPlugin = false;
     var jsxml = false;
@@ -34,25 +35,23 @@
 
             if (commentsPlugin) {
 
-            	commentsPlugin.getComments(padId, function(err, padComments) {
-            		if (err) {
-            			console.log("[ERROR] error in commentsXml.js: commentsPlugin.getComments " + JSON.stringify(err));
-            			return;
-            		}
+            	try {
+	            	commentsPlugin.getComments(padId, function(err, padComments) {
+	            		ERR(err);
 
-            		commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
-                		if (err) {
-                			console.log("[ERROR] error in commentsXml.js: commentsPlugin.getCommentReplies " + JSON.stringify(err));
-                			return;
-                		}
+	            		commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
+	                		ERR(err);
 
-                		allComments = {
-                				comments: padComments.comments,
-                				replies: commentReplies.replies
-                		}
+	                		allComments = {
+	                				comments: padComments.comments,
+	                				replies: commentReplies.replies
+	                		}
 
-                	});
-            	});
+	                	});
+	            	});
+            	} catch (e) {
+            		console.log("[ERROR] Could not retrieve comments." + e);
+            	}
 
             }
 		};
