@@ -1,7 +1,3 @@
-/*jshint loopfunc: true */
-/* TODO refactor to be able to remove the above directive */
-
-
 (function() {
 	var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 	var padManager = require("ep_etherpad-lite/node/db/PadManager");
@@ -260,7 +256,7 @@
 		return utils.createLineElement(lineAttributes, lineContentString, lmkr);
 
 
-	} // end getOneLineXml
+	}; // end getOneLineXml
 
 
 

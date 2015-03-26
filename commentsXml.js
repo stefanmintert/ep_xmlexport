@@ -45,7 +45,7 @@
 	                		allComments = {
 	                				comments: padComments.comments,
 	                				replies: commentReplies.replies
-	                		}
+	                		};
 
 	                	});
 	            	});
@@ -147,7 +147,7 @@
 
 			}
 
-		}
+		};
 
 
 
@@ -155,7 +155,7 @@
 			init: init,
 			selectComment: selectComment,
 			getCommentsXml: getCommentsXml
-		}
+		};
 	})();
 
     /*

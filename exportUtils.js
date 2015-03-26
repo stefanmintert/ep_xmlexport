@@ -1,7 +1,3 @@
-/*jshint loopfunc: true */
-/* TODO refactor to be able to remove the above directive */
-
-
 /*
  * WARNING: exportUtils.js is not a reasonable CommonJS module, with
  * functions for a specific purpose.
@@ -54,11 +50,11 @@
 	var _getXmlStartTagForEplAttribute = function(key, val) {
 
 		return '<attribute key="' + key + '" value="' + val + '">';
-	}
+	};
 
 	var _getXmlEndTagForEplAttribute = function(key) {
 		return '</attribute><!-- /' + key + ' -->';
-	}
+	};
 
 
 
@@ -78,7 +74,7 @@
 	 */
 	var getIteratorIndex = function(stringIterator, stringLength) {
 		return (stringLength - stringIterator.remaining());
-	}
+	};
 
 
 
@@ -95,7 +91,7 @@
 			}
 		}
 		return propsArray;
-	}
+	};
 
 	var populateAnumMap = function(propNames) {
 		var anumMap = {};
@@ -112,7 +108,7 @@
 		});
 
 		return anumMap;
-	}
+	};
 
 
 
@@ -166,24 +162,24 @@
 
 		var init = function() {
 			openElems = [];
-		}
+		};
 
 
 		var count = function() {
 			return openElems.length;
-		}
+		};
 
 		var get = function(n) {
 			return openElems[n];
-		}
+		};
 
 		var shift = function() {
 			return openElems.shift();
-		}
+		};
 
 		var unshift = function(val) {
 			return openElems.unshift(val);
-		}
+		};
 
 		return {
 			init: init,
@@ -191,7 +187,7 @@
 			get: get,
 			shift: shift,
 			unshift: unshift
-		}
+		};
 
 	})();
 
@@ -214,16 +210,16 @@
 		var aNumMap, properties, attributePool, lineIterator;
 
 		var _getPropVal = function(n) {
-			return propVals[n]
-		}
+			return propVals[n];
+		};
 
 		var _setPropVal = function(n, val) {
 			propVals[n] = val;
-		}
+		};
 
 		var _countPropVals = function() {
 			return propVals.length;
-		}
+		};
 
 		var init = function(anMap, props, apool, lIterator) {
 			propVals = [false, false, false];
@@ -233,7 +229,7 @@
 			properties = props;
 			attributePool = apool;
 			lineIterator = lIterator;
-		}
+		};
 
 		var getEndTagsAfterLastOp = function() {
 			var tags2close = [];
@@ -245,7 +241,7 @@
 			}
 
 			return _getOrderedEndTags(tags2close, attributePool, properties);
-		}
+		};
 
 
 		/*
@@ -298,10 +294,10 @@
 
 				// if any prop was left, close and re-open the others that are active (value 'true')
 				if (left) {
-					for (var i = 0; i < propVals.length; i++) {
-						var v = propVals[i];
-						if (v === true) {
-							propVals[i] = STAY; // tag will be closed and re-opened
+					for (var m = 0; m < propVals.length; m++) {
+						var val = propVals[m];
+						if (val === true) {
+							propVals[m] = STAY; // tag will be closed and re-opened
 						}
 					}
 				}
@@ -349,7 +345,7 @@
 			return {
 				withMarkup: opTextWithMarkup + s,
 				plainText: s
-			}
+			};
 		 };
 
 
@@ -357,7 +353,7 @@
 			 init: init,
 			 getXml: getXml,
 			 getEndTagsAfterLastOp: getEndTagsAfterLastOp
-		 }
+		 };
 
 	})();
 
@@ -416,7 +412,7 @@
 		}
 
 		return urls;
-	}
+	};
 
 
 
