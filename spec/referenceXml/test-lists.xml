@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>Unnumbered list:</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="start" value="1"><attribute key="list" value="bullet1">*</attribute><!-- /list --></attribute><!-- /start --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->item 1</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="2">*</attribute><!-- /start --></attribute><!-- /list --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->item 2</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="3">*</attribute><!-- /start --></attribute><!-- /list --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->item 3</line>
+<line></line>
+<line>Numbered list:</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="number1"><attribute key="start" value="1">*</attribute><!-- /start --></attribute><!-- /list --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->item 1</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="number1"><attribute key="start" value="2">*</attribute><!-- /start --></attribute><!-- /list --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->item 2</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="number1"><attribute key="start" value="3">*</attribute><!-- /start --></attribute><!-- /list --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->item 3</line>
+<line></line>
+</content>
+
+</pad>
