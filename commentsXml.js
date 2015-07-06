@@ -19,18 +19,23 @@ try {
     commentsPlugin = false;
 }
 
-var init = function(padId, callback) {
+var getCommentsXml = function(padId, callback) {
+    _loadComments(padId, function(comments){
+        console.warn("loaded comments: " + JSON.stringify(comments));
+        var xmlString = comments.length > 0 ? _commentsToXml(comments) : "";
+        console.warn("comment xml string: " + xmlString);
+        callback(xmlString);
+    });
+};
+
+function _loadComments(padId, callback) {
     if (commentsPlugin) {
         try {
             commentsPlugin.getComments(padId, function(err, padComments) {
                 ERR(err);
                 commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
                     ERR(err);
-                    var allComments = {
-                        comments: padComments.comments,
-                        replies: commentReplies.replies
-                    };
-                    callback(allComments);
+                    callback(_getCommentArray(padComments.comments, commentReplies.replies));
                 });
             });
         } catch (e) {
@@ -39,108 +44,105 @@ var init = function(padId, callback) {
     }
 };
 
-var _repliesForComment = function(comments, commentId) {
-    var replies = [];
-    for (var replyId in comments.replies) {
-        if (comments.replies.hasOwnProperty(replyId) && comments.replies[replyId].commentId === commentId) {
-            replies.push({key: replyId, value: comments.replies[replyId]});
-        }
-    }
-    return replies;
-};
-
-var _getCommentArray = function(comments) {
+/**
+ * 
+ * convert comments object 
+ * @param comments { "key": { comment data } }
+ * @param replies  
+ * to a more usable array 
+ * @returns [{key: "key", value: {comment data}}, replies: [ { key: "key", value: { reply data }} ]}
+ */
+function _getCommentArray (comments, replies) {
     var commentArray = [];
-    for (var commentId in comments.comments) {
-        if (comments.comments.hasOwnProperty(commentId)){
-            commentArray.push({key: commentId, value: comments.comments[commentId]});
+    for (var commentId in comments) {
+        if (comments.hasOwnProperty(commentId)){
+            var commentReplies = _repliesForComment(replies, commentId);
+            
+            commentArray.push({
+                key: commentId, 
+                value: comments[commentId],
+                replies: commentReplies});
         }
     }
     return commentArray;
 };
 
 
-var getCommentsXml = function(padId, callback) {
-    var xmlString = "";
-    //console.warn("COMMENTSTOXML: "+JSON.stringify(allComments));
-    init(padId, function(comments){
-        console.warn("COMMENTS: " + JSON.stringify(comments));
-        if (Object.keys(comments.comments).length > 0) {
-            xmlString = "<comments>";
-            var commentArray = _getCommentArray(comments);
-            for (var i = 0; i < commentArray.length; i++) {
-                var comment = commentArray[i].value;
-                var repliesForCurrentComment = _repliesForComment(comments, commentArray[i].key);
-                xmlString += commentToXml(commentArray[i].key, comment, repliesForCurrentComment);
-            }
-            xmlString += "</comments>\n";
+function _repliesForComment (replies, commentId) {
+    var repliesArray = [];
+    for (var replyId in replies) {
+        if (replies.hasOwnProperty(replyId) && replies[replyId].commentId === commentId) {
+            repliesArray.push({key: replyId, value: replies[replyId]});
         }
-
-        callback(xmlString);
-    });
+    }
+    return repliesArray;
 };
 
-var commentToXml = function(commentId, comment, commentReplies) {
-    if (comment) {
-        var newCommentElement = [
-            "comment", {
-              id: commentId.toString(),
-              timestamp: comment.timestamp.toString(),
-              isoDateTime: (new Date(comment.timestamp)).toISOString()
-            }
-        ];
 
-        var newAuthorElement = [
-            "author",
-            { id: comment.author.toString() },
-            comment.name.toString()
-        ];
-
-        newCommentElement.push(newAuthorElement);
-
-        var newTextElement = [
-            "text",
-            {},
-            comment.text.toString()
-        ];
+function _commentsToXml(comments) {
+    xmlString = "<comments>";
+    for (var i = 0; i < comments.length; i++) {
+        xmlString += _commentToXml(comments[i]);
+    }
+    xmlString += "</comments>\n";
+    return xmlString;
+}
 
 
-        newCommentElement.push(newTextElement);
-
-
-        var replies = ["replies",{}];
-
-        for (var i=0; i<commentReplies.length; i++) {
-            var reply = [
-                "comment",
-                {
-                   id: commentReplies[i].key,
-                   timestamp: commentReplies[i].value.timestamp.toString(),
-                   isoDateTime: (new Date(commentReplies[i].value.timestamp)).toISOString()
-                },
-                [
-                    "author",
-                    { id: commentReplies[i].value.author.toString() },
-                    commentReplies[i].value.name.toString()
-                ],
-                [
-                    "text",
-                    {},
-                    commentReplies[i].value.text.toString()
-                ]
-            ];
-
-            replies.push(reply);
+function _commentToXml(comment) {
+    var newCommentElement = [
+        "comment", {
+          id: comment.key.toString(),
+          timestamp: comment.value.timestamp.toString(),
+          isoDateTime: (new Date(comment.value.timestamp)).toISOString()
         }
+    ];
 
-        if (replies.length > 2 ) { // only add replies element if there are reply children
-            newCommentElement.push(replies);
-        }
-        
-        return "\n" + jsxml.toXml(newCommentElement);
+    var newAuthorElement = [
+        "author",
+        { id: comment.value.author.toString() },
+        comment.value.name.toString()
+    ];
 
+    newCommentElement.push(newAuthorElement);
+
+    var newTextElement = [
+        "text",
+        {},
+        comment.value.text.toString()
+    ];
+
+    newCommentElement.push(newTextElement);
+
+    var replies = ["replies",{}];
+
+    for (var i=0; i<comment.replies.length; i++) {
+        var reply = [
+            "comment",
+            {
+               id: comment.replies[i].key,
+               timestamp: comment.replies[i].value.timestamp.toString(),
+               isoDateTime: (new Date(comment.replies[i].value.timestamp)).toISOString()
+            },
+            [
+                "author",
+                { id: comment.replies[i].value.author.toString() },
+                comment.replies[i].value.name.toString()
+            ],
+            [
+                "text",
+                {},
+                comment.replies[i].value.text.toString()
+            ]
+        ];
+        replies.push(reply);
     }
 
+    if (replies.length > 2 ) { // only add replies element if there are reply children
+        newCommentElement.push(replies);
+    }
+
+    return "\n" + jsxml.toXml(newCommentElement);
 };
 
 
