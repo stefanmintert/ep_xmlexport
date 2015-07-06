@@ -4,6 +4,7 @@ var throwIfError = require("ep_etherpad-lite/node_modules/async-stacktrace");
 var commentsXml = require("./commentsXml.js");
 var xmlescape = require("xml-escape");
 var utils = require("./exportUtils.js");
+var operationHandler = require("./OperationsToXml");
 
 /*
  * getPadXmlDocument
@@ -50,7 +51,7 @@ function _loadPadData (padId, reqOptions, callback) {
  * which might be based on some other export plugin.
  * I keep the comment although we're exporting XML, not LaTeX or HTML
  */
-var LineManager = function(){
+var LineManager = function(listsEnabled){
     // Need to deal with constraints imposed on HTML lists; can
     // only gain one level of nesting at once, can't change type
     // mid-list, etc.
@@ -61,13 +62,13 @@ var LineManager = function(){
     var lists = [];// e.g. [[1,'bullet'], [3,'bullet'], ...]
     var xmlPieces = [];
     return {
-        _startListItem: function(line, lineContent) {
+        _startListItem: function(listLevel, listTypeName, lineContent) {
             // do list stuff
             var whichList = -1; // index into lists or -1
-            if (line.listLevel) {
+            if (listLevel) {
                 whichList = lists.length;
                 for (var j = lists.length - 1; j >= 0; j--) {
-                    if (line.listLevel <= lists[j][0]) {
+                    if (listLevel <= lists[j][0]) {
                         whichList = j;
                     }
                 }
@@ -75,8 +76,8 @@ var LineManager = function(){
 
             //means we are on a deeper level of indentation than the previous line
             if (whichList >= lists.length) {
-                lists.push([line.listLevel, line.listTypeName]);
-                xmlPieces.push("\n<list type='" + line.listTypeName + "'>\n<item>", lineContent || "\n"); // number or bullet
+                lists.push([listLevel, listTypeName]);
+                xmlPieces.push("\n<list type='" + listTypeName + "'>\n<item>", lineContent || "\n"); // number or bullet
             } else { //means we are getting closer to the lowest level of indentation
                 while (whichList < lists.length - 1) {
                     xmlPieces.push("</item>\n</list>"); // number or bullet
@@ -101,12 +102,12 @@ var LineManager = function(){
             }
             return xmlPieces.join("");
         },
-        processLine: function(line, lineContent, listsEnabled) {
+        processLine: function(listLevel, listTypeName, lineContent) {
             //If we are inside a list
-            if (line.listLevel && listsEnabled) {
-                this._startListItem(line, lineContent);
+            if (listLevel && listsEnabled) {
+                this._startListItem(listLevel, listTypeName, lineContent);
             } else { //outside any list
-                this._closeListItemsIfNecessary(line, lineContent);
+                this._closeListItemsIfNecessary();
                 this._pushContent(lineContent);
             }
         }
@@ -125,13 +126,13 @@ var _getPadLinesXml = function (apool, atext, reqOptions) {
     var textLines = atext.text.slice(0, -1).split('\n');
     var attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
 
-    var lineManager = new LineManager();
+    var lineManager = new LineManager(reqOptions.lists === true);
 
     for (var i = 0; i < textLines.length; i++) {
-        var line = utils.analyzeLine(textLines[i], attribLines[i], apool, reqOptions);
+        var line = utils.analyzeLine(textLines[i], attribLines[i], apool, reqOptions.lists === true);
         var lineContent = _getOneLineXml(line.text, line.aline, apool, reqOptions);
         
-        lineManager.processLine(line, lineContent, reqOptions.lists === true);
+        lineManager.processLine(line.listLevel, line.listTypeName, lineContent);
     }
 
     return lineManager.finishAndReturnXml();
@@ -149,8 +150,8 @@ var _getOneLineXml = function(text, attribs, apool, reqOptions) {
     var urls = null;
     var textIterator = Changeset.stringIterator(text);
 
-    var props   = utils.getPropertyNames(apool);
-    var anumMap = utils.populateAnumMap(props);
+    var propertyNames = utils.getPropertyNames(apool);
+    var anumMap = utils.populateAnumMap(propertyNames);
 
     utils.openElements.init(); // no elements are open
 
@@ -171,7 +172,7 @@ var _getOneLineXml = function(text, attribs, apool, reqOptions) {
             var lineSegmentWithMarkup = "";
             var lineSegmentWithoutMarkup = "";
 
-            utils.operationHandler.init(anumMap, props, apool, lineIterator);
+            operationHandler.init(anumMap, propertyNames, apool, lineIterator, utils.openElements);
 
             // current position on the line iteration
             var fromIdx = utils.getIteratorIndex(lineIterator, lineLength);
@@ -181,13 +182,13 @@ var _getOneLineXml = function(text, attribs, apool, reqOptions) {
             // begin iteration over spans (=operations) in line segment
             while (opIterator.hasNext()) {
                 var currentOp = opIterator.next();
-                var opXml = utils.operationHandler.getXml(currentOp);
+                var opXml = operationHandler.getXml(currentOp);
                 lineSegmentWithMarkup += opXml.withMarkup;
                 lineSegmentWithoutMarkup += opXml.plainText;
             } // end iteration over spans in line segment
 
             return {
-                withMarkup: lineSegmentWithMarkup + utils.operationHandler.getEndTagsAfterLastOp(),
+                withMarkup: lineSegmentWithMarkup + operationHandler.getEndTagsAfterLastOp(),
                 plainText:  lineSegmentWithoutMarkup
             };
         }
