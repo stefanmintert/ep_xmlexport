@@ -19,150 +19,135 @@ try {
     commentsPlugin = false;
 }
 
-
-    var commentsXml = (function() {
-
-            // allComments = all comments saved for a pad (including those for older pad versions)
-            var allComments = null;
-
-            // currentPadComments = only those comments, that are required for the current pad content
-            var currentPadComments = [];
-
-            var init = function(padId) {
-
-                    currentPadComments = [];
-
-        if (commentsPlugin) {
-
-            try {
-                    commentsPlugin.getComments(padId, function(err, padComments) {
-                            ERR(err);
-
-                            commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
-                                    ERR(err);
-
-                                    allComments = {
-                                                    comments: padComments.comments,
-                                                    replies: commentReplies.replies
-                                    };
-
-                            });
-                    });
-            } catch (e) {
-                    console.log("[ERROR] Could not retrieve comments." + e);
-            }
-
+var init = function(padId, callback) {
+    if (commentsPlugin) {
+        try {
+            commentsPlugin.getComments(padId, function(err, padComments) {
+                ERR(err);
+                commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
+                    ERR(err);
+                    var allComments = {
+                        comments: padComments.comments,
+                        replies: commentReplies.replies
+                    };
+                    callback(allComments);
+                });
+            });
+        } catch (e) {
+            console.log("[ERROR] Could not retrieve comments." + e);
         }
-            };
+    }
+};
 
-            var selectComment = function(commentId) {
-                    currentPadComments.push(commentId.toString());
-            };
+var _repliesForComment = function(comments, commentId) {
+    var replies = [];
+    for (var replyId in comments.replies) {
+        if (comments.replies.hasOwnProperty(replyId) && comments.replies[replyId].commentId === commentId) {
+            replies.push({key: replyId, value: comments.replies[replyId]});
+        }
+    }
+    return replies;
+};
 
-            var getCommentsXml = function() {
-                    var xmlString = "";
-
-                    if (allComments && currentPadComments.length > 0) {
-                            xmlString = "<comments>";
-
-
-                            for (var i = 0; i < currentPadComments.length; i++) {
-                                    xmlString += commentToXml(currentPadComments[i]);
-                            }
-                            xmlString += "</comments>\n";
-                    }
-
-                    return xmlString;
-            };
-
-            var commentToXml = function(commentId) {
-                    if (allComments.comments && allComments.comments[commentId]) {
-                            var newCommentElement = [
-                                                      "comment",
-                                                      {
-                                                              "id": commentId.toString(),
-                                                              "timestamp": allComments.comments[commentId].timestamp.toString(),
-                                                              "isoDateTime": (new Date(allComments.comments[commentId].timestamp)).toISOString()
-                                                      },
-                                                     ];
+var _getCommentArray = function(comments) {
+    var commentArray = [];
+    for (var commentId in comments.comments) {
+        if (comments.comments.hasOwnProperty(commentId)){
+            commentArray.push({key: commentId, value: comments.comments[commentId]});
+        }
+    }
+    return commentArray;
+};
 
 
-                            var newAuthorElement = [
-                                                            "author",
-                                                            {
-                                                                    "id": allComments.comments[commentId].author.toString()
-                                                            },
-                                                            allComments.comments[commentId].name.toString()
-                                                            ];
+var getCommentsXml = function(padId, callback) {
+    var xmlString = "";
+    //console.warn("COMMENTSTOXML: "+JSON.stringify(allComments));
+    init(padId, function(comments){
+        console.warn("COMMENTS: " + JSON.stringify(comments));
+        if (Object.keys(comments.comments).length > 0) {
+            xmlString = "<comments>";
+            var commentArray = _getCommentArray(comments);
+            for (var i = 0; i < commentArray.length; i++) {
+                var comment = commentArray[i].value;
+                var repliesForCurrentComment = _repliesForComment(comments, commentArray[i].key);
+                xmlString += commentToXml(commentArray[i].key, comment, repliesForCurrentComment);
+            }
+            xmlString += "</comments>\n";
+        }
 
-                            newCommentElement.push(newAuthorElement);
+        callback(xmlString);
+    });
+};
 
-                            var newTextElement = [
-                                                    "text",
-                                                    {},
-                                                    allComments.comments[commentId].text.toString()
-                                                  ];
+var commentToXml = function(commentId, comment, commentReplies) {
+    if (comment) {
+        var newCommentElement = [
+            "comment", {
+              id: commentId.toString(),
+              timestamp: comment.timestamp.toString(),
+              isoDateTime: (new Date(comment.timestamp)).toISOString()
+            }
+        ];
 
+        var newAuthorElement = [
+            "author",
+            { id: comment.author.toString() },
+            comment.name.toString()
+        ];
 
-                            newCommentElement.push(newTextElement);
+        newCommentElement.push(newAuthorElement);
 
-
-                            var replies = ["replies",{}];
-
-                            for (var replyId in allComments.replies) {
-                                    if (allComments.replies.hasOwnProperty(replyId) && allComments.replies[replyId].commentId == commentId) {
-
-                                            var reply = [
-                                                         "comment",
-                                                         {
-                                                             "id": replyId.toString(),
-                                                             "timestamp": allComments.replies[replyId].timestamp.toString(),
-                                                      "isoDateTime": (new Date(allComments.replies[replyId].timestamp)).toISOString()
-                                                         },
-                                                                    [
-                                                                            "author",
-                                                                            {
-                                                                                    "id": allComments.replies[replyId].author.toString()
-                                                                            },
-                                                                            allComments.replies[replyId].name.toString()
-                                                                    ],
-                                                                    [
-                                                                            "text",
-                                                                            {},
-                                                                            allComments.replies[replyId].text.toString()
-                                                                     ]
-                                                  ];
-
-                                            replies.push(reply);
-                                    }
-                            }
-
-                            if (replies.length > 2 ) { // only add replies element if there are reply children
-                                    newCommentElement.push(replies);
-                            }
+        var newTextElement = [
+            "text",
+            {},
+            comment.text.toString()
+        ];
 
 
-                            return "\n" + jsxml.toXml(newCommentElement);
-
-                    }
-
-            };
+        newCommentElement.push(newTextElement);
 
 
+        var replies = ["replies",{}];
 
-            return {
-                    init: init,
-                    selectComment: selectComment,
-                    getCommentsXml: getCommentsXml
-            };
-    })();
+        for (var i=0; i<commentReplies.length; i++) {
+            var reply = [
+                "comment",
+                {
+                   id: commentReplies[i].key,
+                   timestamp: commentReplies[i].value.timestamp.toString(),
+                   isoDateTime: (new Date(commentReplies[i].value.timestamp)).toISOString()
+                },
+                [
+                    "author",
+                    { id: commentReplies[i].value.author.toString() },
+                    commentReplies[i].value.name.toString()
+                ],
+                [
+                    "text",
+                    {},
+                    commentReplies[i].value.text.toString()
+                ]
+            ];
+
+            replies.push(reply);
+        }
+
+        if (replies.length > 2 ) { // only add replies element if there are reply children
+            newCommentElement.push(replies);
+        }
+        
+        return "\n" + jsxml.toXml(newCommentElement);
+
+    }
+
+};
+
 
 /*
  * Define exports
  *
  */
-exports.init 			= commentsXml.init;
-exports.selectComment 	= commentsXml.selectComment;
-exports.getCommentsXml 	= commentsXml.getCommentsXml;
+exports.getCommentsXml 	= getCommentsXml;
 
 

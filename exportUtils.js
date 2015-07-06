@@ -322,7 +322,8 @@
 
 					// If entering a new comment, select comment for later translation to XML
 					if (propVals[l] === ENTER && properties[l] === "comment") {
-						commentsXml.selectComment(attributePool.numToAttrib[l][1]);
+                                                // TODO we have to do deal with this in another way
+						//commentsXml.selectComment(attributePool.numToAttrib[l][1]);
 					}
 
 					if (propVals[l] === ENTER || propVals[l] === STAY) {

@@ -15,13 +15,15 @@ var utils = require("./exportUtils.js");
 var getPadXmlDocument = function(padId, reqOptions, callback) {
     padManager.getPad(padId, function (err, pad) {
         if (ERR(err, callback)) return;
-        commentsXml.init(padId);
+        //commentsXml.init(padId);
 
-        getContentXml(pad, reqOptions, function (err, contentXml) {
+        _getContentXml(pad, reqOptions, function (err, contentXml) {
             if (!ERR(err, callback)) {
-                var xmlComments = commentsXml.getCommentsXml();
-                var outputXml = '<?xml version="1.0"?>\n<pad>\n<content>' + contentXml + '</content>\n' + xmlComments + '\n</pad>'
-                callback(null, outputXml);
+                commentsXml.getCommentsXml(padId, function(xmlComments){
+                    var outputXml = '<?xml version="1.0"?>\n<pad>\n<content>' + contentXml + '</content>\n' + xmlComments + '\n</pad>';
+                    callback(null, outputXml);
+                });
+                
             }
         });
     });
@@ -32,7 +34,7 @@ var getPadXmlDocument = function(padId, reqOptions, callback) {
 * Returns an XML fragment for the requested pad revision with pad contents.
  * The result is not well-formed.
  */
-var getContentXml = function (pad, reqOptions, callback) {
+var _getContentXml = function (pad, reqOptions, callback) {
     var revNum = reqOptions.revision;
 
     if (revNum) {
@@ -40,23 +42,23 @@ var getContentXml = function (pad, reqOptions, callback) {
             // TODO: was bedeutet es wenn ERR(err, callback) === true??
             var atext = ERR(err, callback) ? pad.atext : revisionAtext;
 
-            callback(null, getPadLinesXml(pad.pool, atext, reqOptions));
+            callback(null, _getPadLinesXml(pad.pool, atext, reqOptions));
         });
     } else {
-        callback(null, getPadLinesXml(pad.pool, pad.atext, reqOptions));
+        callback(null, _getPadLinesXml(pad.pool, pad.atext, reqOptions));
     }
 };
 
 
 /*
- * getPadLinesXml
+ * _getPadLinesXml
  * Returns an XML fragment for the content (atext = attribs+text) of a pad.
  * The result is just a sequence of <line>...</line> elements, except if
  * lists up-translation is turned-on.
  *
  * The result is not well-formed.
  */
-var getPadLinesXml = function (apool, atext, reqOptions) {
+var _getPadLinesXml = function (apool, atext, reqOptions) {
     var textLines = atext.text.slice(0, -1).split('\n');
     var attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
 
@@ -124,8 +126,8 @@ var getPadLinesXml = function (apool, atext, reqOptions) {
 
     for (var i = 0; i < textLines.length; i++) {
         var line = utils.analyzeLine(textLines[i], attribLines[i], apool, reqOptions);
-        var lineContent = getOneLineXml(line.text, line.aline, apool, reqOptions);
-
+        var lineContent = _getOneLineXml(line.text, line.aline, apool, reqOptions);
+        
         //If we are inside a list
         if (line.listLevel && (reqOptions.lists === true)) {
             lineManager.startListItem(line, lineContent);
@@ -141,120 +143,120 @@ var getPadLinesXml = function (apool, atext, reqOptions) {
 
 
 /*
- * getOneLineXml
+ * _getOneLineXml
  * Returns an XML representation for a pad line.
  */
-var getOneLineXml = function(text, attribs, apool, reqOptions) {
-        var lmkr = false;
-        var lineAttributes = [];
-        var xmlStringAssembler = Changeset.stringAssembler();
-        var urls = null;
-        var textIterator = Changeset.stringIterator(text);
+var _getOneLineXml = function(text, attribs, apool, reqOptions) {
+    var lmkr = false;
+    var lineAttributes = [];
+    var xmlStringAssembler = Changeset.stringAssembler();
+    var urls = null;
+    var textIterator = Changeset.stringIterator(text);
 
-        var props   = utils.getPropertyNames(apool);
-        var anumMap = utils.populateAnumMap(props);
-
-
-        utils.openElements.init(); // no elements are open
+    var props   = utils.getPropertyNames(apool);
+    var anumMap = utils.populateAnumMap(props);
 
 
-
-        /*
-         * getLineSegmentXml
-         * Gets text with length of 'numChars' starting from current position of lineIterator.
-         * Returns both, text with markup and plain text as literal object
-         * { withMarkup: ..., plainText: ... }
-         *
-         */
-        function getLineSegmentXml(lineIterator, lineLength, numChars) {
-                if (numChars <= 0) {
-                        return {
-                                withMarkup: "",
-                                plainText:  ""
-                        };
-                } else {
-                        var lineSegmentWithMarkup = "";
-                        var lineSegmentWithoutMarkup = "";
-
-                        utils.operationHandler.init(anumMap, props, apool, lineIterator);
-
-                        // current position on the line iteration
-                        var fromIdx = utils.getIteratorIndex(lineIterator, lineLength);
-
-                        var opIterator = Changeset.opIterator(Changeset.subattribution(attribs, fromIdx, fromIdx + numChars));
-
-                        // begin iteration over spans (=operations) in line segment
-                        while (opIterator.hasNext()) {
-                                var currentOp = opIterator.next();
-                                var opXml = utils.operationHandler.getXml(currentOp);
-                                lineSegmentWithMarkup += opXml.withMarkup;
-                                lineSegmentWithoutMarkup += opXml.plainText;
-                        } // end iteration over spans in line segment
-
-                        return {
-                                withMarkup: lineSegmentWithMarkup + utils.operationHandler.getEndTagsAfterLastOp(),
-                                plainText:  lineSegmentWithoutMarkup
-                        };
-                }
-        } // end getLineSegmentXml
-
-
-        if (reqOptions.lineattribs === true) {
-                // start lineMarker (lmkr) check
-                var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
-
-                if (firstCharacterOfLineOpIterator.hasNext()) {
-                        var singleOperation = firstCharacterOfLineOpIterator.next();
-
-                        // iterate through attributes
-                        Changeset.eachAttribNumber(singleOperation.attribs, function (a) {
-                                lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
-
-                                if (apool.numToAttrib[a][0] === "lmkr") {
-                                        lmkr = true;
-                                }
-                        });
-                }
-
-                if (lmkr) {
-                        textIterator.skip(1); // begin attribute processing after lmkr character
-                }
-
-        }
-
-        /*
-         * Process URIs
-         */
-        if (reqOptions.regex) {
-                urls = utils.findURLs(text);
-        }
-
-        if (urls) {
-                urls.forEach(function (urlData) {
-                        var startIndex = urlData[0];
-                        var url = urlData[1];
-                        var urlLength = url.length;
-
-
-                        xmlStringAssembler.append(getLineSegmentXml(textIterator, text.length, startIndex - utils.getIteratorIndex(textIterator, text.length)).withMarkup);
-
-                        var uriText = getLineSegmentXml(textIterator, text.length, urlLength);
-
-                        xmlStringAssembler.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
-                });
-        }
+    utils.openElements.init(); // no elements are open
 
 
 
-        xmlStringAssembler.append(getLineSegmentXml(textIterator, text.length, textIterator.remaining()).withMarkup);
+    /*
+     * getLineSegmentXml
+     * Gets text with length of 'numChars' starting from current position of lineIterator.
+     * Returns both, text with markup and plain text as literal object
+     * { withMarkup: ..., plainText: ... }
+     *
+     */
+    function getLineSegmentXml(lineIterator, lineLength, numChars) {
+            if (numChars <= 0) {
+                    return {
+                            withMarkup: "",
+                            plainText:  ""
+                    };
+            } else {
+                    var lineSegmentWithMarkup = "";
+                    var lineSegmentWithoutMarkup = "";
 
-        var lineContentString = xmlStringAssembler.toString();
+                    utils.operationHandler.init(anumMap, props, apool, lineIterator);
+
+                    // current position on the line iteration
+                    var fromIdx = utils.getIteratorIndex(lineIterator, lineLength);
+
+                    var opIterator = Changeset.opIterator(Changeset.subattribution(attribs, fromIdx, fromIdx + numChars));
+
+                    // begin iteration over spans (=operations) in line segment
+                    while (opIterator.hasNext()) {
+                            var currentOp = opIterator.next();
+                            var opXml = utils.operationHandler.getXml(currentOp);
+                            lineSegmentWithMarkup += opXml.withMarkup;
+                            lineSegmentWithoutMarkup += opXml.plainText;
+                    } // end iteration over spans in line segment
+
+                    return {
+                            withMarkup: lineSegmentWithMarkup + utils.operationHandler.getEndTagsAfterLastOp(),
+                            plainText:  lineSegmentWithoutMarkup
+                    };
+            }
+    } // end getLineSegmentXml
 
 
-        return utils.createLineElement(lineAttributes, lineContentString, lmkr);
+    if (reqOptions.lineattribs === true) {
+            // start lineMarker (lmkr) check
+            var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
+
+            if (firstCharacterOfLineOpIterator.hasNext()) {
+                    var singleOperation = firstCharacterOfLineOpIterator.next();
+
+                    // iterate through attributes
+                    Changeset.eachAttribNumber(singleOperation.attribs, function (a) {
+                            lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
+
+                            if (apool.numToAttrib[a][0] === "lmkr") {
+                                    lmkr = true;
+                            }
+                    });
+            }
+
+            if (lmkr) {
+                    textIterator.skip(1); // begin attribute processing after lmkr character
+            }
+
+    }
+
+    /*
+     * Process URIs
+     */
+    if (reqOptions.regex) {
+            urls = utils.findURLs(text);
+    }
+
+    if (urls) {
+            urls.forEach(function (urlData) {
+                    var startIndex = urlData[0];
+                    var url = urlData[1];
+                    var urlLength = url.length;
 
 
-}; // end getOneLineXml
+                    xmlStringAssembler.append(getLineSegmentXml(textIterator, text.length, startIndex - utils.getIteratorIndex(textIterator, text.length)).withMarkup);
+
+                    var uriText = getLineSegmentXml(textIterator, text.length, urlLength);
+
+                    xmlStringAssembler.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
+            });
+    }
+
+
+
+    xmlStringAssembler.append(getLineSegmentXml(textIterator, text.length, textIterator.remaining()).withMarkup);
+
+    var lineContentString = xmlStringAssembler.toString();
+
+
+    return utils.createLineElement(lineAttributes, lineContentString, lmkr);
+
+
+}; // end _getOneLineXml
 
 
 /*
