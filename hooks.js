@@ -27,13 +27,15 @@ exports.expressCreateServer = function (hook_name, args, cb) {
         };
 
 
-        exportXml.getPadXmlDocument(padID, options, function(err, result) {
+        exportXml.getPadXmlDocument(padID, options, function(result) {
             res.contentType('plain/xml');
             if (prettyData && options.pretty) {
                 res.send(prettyData.xml(result));
             } else {
                 res.send(result);
             }
+        }, function(error) {
+            res.status(500).send(error);
         });
     });
 };
