@@ -13,31 +13,25 @@
  */
 
 var Changeset = require("ep_etherpad-lite/static/js/Changeset");
-var xmlescape = require("xml-escape");
-var commentsXml = require("./commentsXml.js");
-
 
 
 /* ********************************************
  * 	XML helper functions
  */
-var createLineElement = function(lineAttributes, lineContentString, lmkr) {
-        var lineStartTag = '<line';
-
-        if (lmkr) {
-                for (var i = 0; i < lineAttributes.length; i=i+1) {
-                        lineStartTag += ' ';
-                        lineStartTag += lineAttributes[i][0];
-                        lineStartTag += '="';
-                        lineStartTag += lineAttributes[i][1];
-                        lineStartTag += '"';
-                }
-        }
-        lineStartTag += ">";
-        var lineEndTag = '</line>';
+var createLineElement = function(lineAttributes, lineContentString) {
+    var lineStartTag = '<line';
+    for (var i = 0; i < lineAttributes.length; i++) {
+        lineStartTag += ' ';
+        lineStartTag += lineAttributes[i][0];
+        lineStartTag += '="';
+        lineStartTag += lineAttributes[i][1];
+        lineStartTag += '"';
+    }
+    lineStartTag += ">";
+    var lineEndTag = '</line>';
 
 
-        return lineStartTag + lineContentString + lineEndTag;
+    return lineStartTag + lineContentString + lineEndTag;
 };
 
 
@@ -45,20 +39,6 @@ var createLineElement = function(lineAttributes, lineContentString, lmkr) {
  * EPL specific functions
  *
  */
-
-
-/*
- * Unfortunately Changeset.stringIterator does not reveal it's current index.
- * This function calculates the index from the original string length
- * and the remaining number of characters.
- *
- */
-var getIteratorIndex = function(stringIterator, stringLength) {
-        return (stringLength - stringIterator.remaining());
-};
-
-
-
 
 /*
  * Collect all property names (=attribute names) which are used in apool
@@ -127,12 +107,10 @@ var findURLs = function (text) {
     var _REGEX_URLCHAR = new RegExp('(' + /[-:@a-zA-Z0-9_.,~%+\/\\?=&#;()$]/.source + '|' + _REGEX_WORDCHAR.source + ')');
     var _REGEX_URL = new RegExp(/(?:(?:https?|s?ftp|ftps|file|smb|afp|nfs|(x-)?man|gopher|txmt):\/\/|mailto:)/.source + _REGEX_URLCHAR.source + '*(?![:.,;])' + _REGEX_URLCHAR.source, 'g');
 
-
     _REGEX_URL.lastIndex = 0;
-    var urls = null;
+    var urls = [];
     var execResult;
-    while ((execResult = _REGEX_URL.exec(text))) {
-        urls = (urls || []);
+    while (execResult = _REGEX_URL.exec(text)) {
         var startIndex = execResult.index;
         var url = execResult[0];
         urls.push([startIndex, url]);
@@ -147,7 +125,6 @@ var findURLs = function (text) {
  *
  */
 exports.createLineElement = createLineElement;
-exports.getIteratorIndex = getIteratorIndex;
 exports.getPropertyNames = getPropertyNames;
 exports.findURLs = findURLs;
 exports.analyzeLine = analyzeLine;

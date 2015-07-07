@@ -21,7 +21,7 @@ try {
 
 var getCommentsXml = function(padId, referencedCommentIds, callback) {
     _loadComments(padId, function(comments){
-        console.warn("loaded comments: " + JSON.stringify(comments));
+        //console.warn("loaded comments: " + JSON.stringify(comments));
         var referencedComments = comments.filter(function(comment){
             return referencedCommentIds.indexOf(comment.key) > -1;
         });
@@ -29,7 +29,7 @@ var getCommentsXml = function(padId, referencedCommentIds, callback) {
             console.error("not all referenced comments " + JSON.stringify(referencedComments) + " are available in data! " + JSON.stringify(referencedCommentIds) );
         }
         var xmlString = comments.length > 0 ? _commentsToXml(referencedComments) : "";
-        console.warn("comment xml string: " + xmlString);
+        //console.warn("comment xml string: " + xmlString);
         callback(xmlString);
     });
 };

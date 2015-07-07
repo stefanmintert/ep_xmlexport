@@ -95,9 +95,9 @@ var OperationsToXmlTranslator = function(propertyNames, apool, lIterator, dropAt
      */
     function _getOrderedEndTags(tags2close) {
         var orderedEndTagsString = "";
-        for(var i=0; i < openElements.count(); i++) {
-            for(var j=0;j<tags2close.length;j++) {
-                if(tags2close[j] === openElements.get(i)) {
+        for (var i=0; i < openElements.count(); i++) {
+            for (var j=0;j<tags2close.length;j++) {
+                if (tags2close[j] === openElements.get(i)) {
                     openElements.shift();
                     orderedEndTagsString += _getXmlEndTagForEplAttribute(propertyNames[tags2close[j]]);
                     i--;
@@ -137,7 +137,6 @@ var OperationsToXmlTranslator = function(propertyNames, apool, lIterator, dropAt
      var getXml = function(op, commentCollector) {
         var propChanged = false;
         var opTextWithMarkup = "";
-        console.warn(op);
 
         Changeset.eachAttribNumber(op.attribs, function (attributeIndex) {
             if (dropAttributeIndexes.indexOf(attributeIndex) < 0) {
