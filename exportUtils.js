@@ -16,8 +16,6 @@ var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 var xmlescape = require("xml-escape");
 var commentsXml = require("./commentsXml.js");
 
-//var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
-var DROPATTRIBUTES = [];
 
 
 /* ********************************************
@@ -76,24 +74,6 @@ var getPropertyNames = function(apool) {
         return propsArray;
 };
 
-var populateAnumMap = function(propNames) {
-        var anumMap = {};
-
-        /*
-         * anumMap maps the attribute numbers to their index in the props array.
-         * This is legacy code. In our case both numbers should always be the same.
-         * TODO: do we need anumMap any longer? if not, remove anumMap from the entire code.
-         */
-        propNames.forEach(function (propName, i) {
-                if (DROPATTRIBUTES.indexOf(propName) < 0) { // Attribute shall be dropped
-                        anumMap[i] = i;
-                }
-        });
-
-        return anumMap;
-};
-
-
 
 /*
  * analyzeLine
@@ -105,7 +85,7 @@ var analyzeLine = function (text, aline, apool, listsEnabled) {
     var line = {};
 
     // identify list
-    var lineMarker = 0;
+    var lineMarker = false;
     line.listLevel = 0;
     if (aline) {
         var opIter = Changeset.opIterator(aline);
@@ -113,7 +93,7 @@ var analyzeLine = function (text, aline, apool, listsEnabled) {
             var listType = Changeset.opAttributeValue(opIter.next(), 'list', apool);
 
             if (listType) {
-                lineMarker = 1;
+                lineMarker = true;
                 listType = /([a-z]+)([12345678])/.exec(listType);
                 if (listType) {
                     line.listTypeName = listType[1];
@@ -134,49 +114,6 @@ var analyzeLine = function (text, aline, apool, listsEnabled) {
     return line;
 };
 
-
-/*
- * openElements
- *
- * keeps track of opened, not yet closed elements.
- *
- */
-var openElements = (function() {
-        var openElems = [];
-
-        var init = function() {
-                openElems = [];
-        };
-
-
-        var count = function() {
-                return openElems.length;
-        };
-
-        var get = function(n) {
-                return openElems[n];
-        };
-
-        var shift = function() {
-                return openElems.shift();
-        };
-
-        var unshift = function(val) {
-                return openElems.unshift(val);
-        };
-
-        return {
-                init: init,
-                count: count,
-                get: get,
-                shift: shift,
-                unshift: unshift
-        };
-
-})();
-
-
-
 /* ********************************************
  * Regexp analysis
  *
@@ -184,27 +121,25 @@ var openElements = (function() {
 
 // returns null if no URLs, or [[startIndex1, url1], [startIndex2, url2], ...]
 var findURLs = function (text) {
-        // copied from ACE
-        var _REGEX_WORDCHAR = /[\u0030-\u0039\u0041-\u005A\u0061-\u007A\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u0100-\u1FFF\u3040-\u9FFF\uF900-\uFDFF\uFE70-\uFEFE\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFDC]/;
-        var _REGEX_SPACE = /\s/;
-        var _REGEX_URLCHAR = new RegExp('(' + /[-:@a-zA-Z0-9_.,~%+\/\\?=&#;()$]/.source + '|' + _REGEX_WORDCHAR.source + ')');
-        var _REGEX_URL = new RegExp(/(?:(?:https?|s?ftp|ftps|file|smb|afp|nfs|(x-)?man|gopher|txmt):\/\/|mailto:)/.source + _REGEX_URLCHAR.source + '*(?![:.,;])' + _REGEX_URLCHAR.source, 'g');
+    // copied from ACE
+    var _REGEX_WORDCHAR = /[\u0030-\u0039\u0041-\u005A\u0061-\u007A\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u0100-\u1FFF\u3040-\u9FFF\uF900-\uFDFF\uFE70-\uFEFE\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFDC]/;
+    var _REGEX_SPACE = /\s/;
+    var _REGEX_URLCHAR = new RegExp('(' + /[-:@a-zA-Z0-9_.,~%+\/\\?=&#;()$]/.source + '|' + _REGEX_WORDCHAR.source + ')');
+    var _REGEX_URL = new RegExp(/(?:(?:https?|s?ftp|ftps|file|smb|afp|nfs|(x-)?man|gopher|txmt):\/\/|mailto:)/.source + _REGEX_URLCHAR.source + '*(?![:.,;])' + _REGEX_URLCHAR.source, 'g');
 
 
-        _REGEX_URL.lastIndex = 0;
-        var urls = null;
-        var execResult;
-        while ((execResult = _REGEX_URL.exec(text))) {
-                urls = (urls || []);
-                var startIndex = execResult.index;
-                var url = execResult[0];
-                urls.push([startIndex, url]);
-        }
+    _REGEX_URL.lastIndex = 0;
+    var urls = null;
+    var execResult;
+    while ((execResult = _REGEX_URL.exec(text))) {
+        urls = (urls || []);
+        var startIndex = execResult.index;
+        var url = execResult[0];
+        urls.push([startIndex, url]);
+    }
 
-        return urls;
+    return urls;
 };
-
-
 
 
 /*
@@ -214,8 +149,5 @@ var findURLs = function (text) {
 exports.createLineElement = createLineElement;
 exports.getIteratorIndex = getIteratorIndex;
 exports.getPropertyNames = getPropertyNames;
-exports.populateAnumMap = populateAnumMap;
 exports.findURLs = findURLs;
 exports.analyzeLine = analyzeLine;
-exports.openElements = openElements;
-

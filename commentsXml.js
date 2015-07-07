@@ -19,10 +19,16 @@ try {
     commentsPlugin = false;
 }
 
-var getCommentsXml = function(padId, callback) {
+var getCommentsXml = function(padId, referencedCommentIds, callback) {
     _loadComments(padId, function(comments){
         console.warn("loaded comments: " + JSON.stringify(comments));
-        var xmlString = comments.length > 0 ? _commentsToXml(comments) : "";
+        var referencedComments = comments.filter(function(comment){
+            return referencedCommentIds.indexOf(comment.key) > -1;
+        });
+        if (referencedComments.length < referencedCommentIds.length) {
+            console.error("not all referenced comments " + JSON.stringify(referencedComments) + " are available in data! " + JSON.stringify(referencedCommentIds) );
+        }
+        var xmlString = comments.length > 0 ? _commentsToXml(referencedComments) : "";
         console.warn("comment xml string: " + xmlString);
         callback(xmlString);
     });
@@ -92,9 +98,9 @@ function _commentsToXml(comments) {
 function _commentToXml(comment) {
     var newCommentElement = [
         "comment", {
-          id: comment.key.toString(),
-          timestamp: comment.value.timestamp.toString(),
-          isoDateTime: (new Date(comment.value.timestamp)).toISOString()
+            id: comment.key.toString(),
+            timestamp: comment.value.timestamp.toString(),
+            isoDateTime: (new Date(comment.value.timestamp)).toISOString()
         }
     ];
 

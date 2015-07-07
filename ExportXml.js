@@ -4,7 +4,28 @@ var throwIfError = require("ep_etherpad-lite/node_modules/async-stacktrace");
 var commentsXml = require("./commentsXml.js");
 var xmlescape = require("xml-escape");
 var utils = require("./exportUtils.js");
-var operationHandler = require("./OperationsToXml");
+var OperationsToXmlTranslator = require("./OperationsToXml");
+
+//var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
+var DROPATTRIBUTES = [];
+
+/**
+ * collects commentIds referenced in the processed document,
+ * the list is used to filter all those comments that are not referenced
+ * in the requested revision
+ */
+var CommentCollector = function(){
+    var collectedCommentIds = [];
+    return {
+        add: function(commentId){
+            collectedCommentIds.push(commentId);
+        },
+        list: function(){
+            return collectedCommentIds;
+        }
+    };
+};
+
 
 /*
  * getPadXmlDocument
@@ -15,10 +36,11 @@ var operationHandler = require("./OperationsToXml");
  */
 var getPadXmlDocument = function(padId, reqOptions, successCallback, errorCallback) {
     try {
+        var commentCollector = new CommentCollector();
         _loadPadData(padId, reqOptions, function(apool, atext){
-            var contentXml = _getPadLinesXml(apool, atext, reqOptions);
+            var contentXml = _getPadLinesXml(apool, atext, reqOptions, commentCollector);
 
-            commentsXml.getCommentsXml(padId, function(commentsXml){
+            commentsXml.getCommentsXml(padId, commentCollector.list(), function(commentsXml){
                 var outputXml = '<?xml version="1.0"?>\n<pad>\n<content>' + contentXml + '</content>\n' + commentsXml + '\n</pad>';
                 successCallback(outputXml);
             });
@@ -122,7 +144,7 @@ var LineManager = function(listsEnabled){
  *
  * The result is not well-formed.
  */
-var _getPadLinesXml = function (apool, atext, reqOptions) {
+var _getPadLinesXml = function (apool, atext, reqOptions, commentCollector) {
     var textLines = atext.text.slice(0, -1).split('\n');
     var attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
 
@@ -130,7 +152,7 @@ var _getPadLinesXml = function (apool, atext, reqOptions) {
 
     for (var i = 0; i < textLines.length; i++) {
         var line = utils.analyzeLine(textLines[i], attribLines[i], apool, reqOptions.lists === true);
-        var lineContent = _getOneLineXml(line.text, line.aline, apool, reqOptions);
+        var lineContent = _getOneLineXml(line.text, line.aline, apool, reqOptions, commentCollector);
         
         lineManager.processLine(line.listLevel, line.listTypeName, lineContent);
     }
@@ -143,7 +165,7 @@ var _getPadLinesXml = function (apool, atext, reqOptions) {
  * _getOneLineXml
  * Returns an XML representation for a pad line.
  */
-var _getOneLineXml = function(text, attribs, apool, reqOptions) {
+var _getOneLineXml = function(text, attribs, apool, reqOptions, commentCollector) {
     var lmkr = false;
     var lineAttributes = [];
     var xmlStringAssembler = Changeset.stringAssembler();
@@ -151,9 +173,8 @@ var _getOneLineXml = function(text, attribs, apool, reqOptions) {
     var textIterator = Changeset.stringIterator(text);
 
     var propertyNames = utils.getPropertyNames(apool);
-    var anumMap = utils.populateAnumMap(propertyNames);
 
-    utils.openElements.init(); // no elements are open
+    var operationHandler = new OperationsToXmlTranslator(propertyNames, apool, textIterator, DROPATTRIBUTES);
 
     /*
      * getLineSegmentXml
@@ -172,7 +193,7 @@ var _getOneLineXml = function(text, attribs, apool, reqOptions) {
             var lineSegmentWithMarkup = "";
             var lineSegmentWithoutMarkup = "";
 
-            operationHandler.init(anumMap, propertyNames, apool, lineIterator, utils.openElements);
+            operationHandler.reset();
 
             // current position on the line iteration
             var fromIdx = utils.getIteratorIndex(lineIterator, lineLength);
@@ -182,7 +203,7 @@ var _getOneLineXml = function(text, attribs, apool, reqOptions) {
             // begin iteration over spans (=operations) in line segment
             while (opIterator.hasNext()) {
                 var currentOp = opIterator.next();
-                var opXml = operationHandler.getXml(currentOp);
+                var opXml = operationHandler.getXml(currentOp, commentCollector);
                 lineSegmentWithMarkup += opXml.withMarkup;
                 lineSegmentWithoutMarkup += opXml.plainText;
             } // end iteration over spans in line segment
