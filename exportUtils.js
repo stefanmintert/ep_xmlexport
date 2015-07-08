@@ -41,21 +41,6 @@ var createLineElement = function(lineAttributes, lineContentString) {
  */
 
 /*
- * Collect all property names (=attribute names) which are used in apool
- */
-var getPropertyNames = function(apool) {
-        var propsArray = [];
-
-        for (var propName in apool.numToAttrib) {
-                if (apool.numToAttrib.hasOwnProperty(propName)) {
-                        propsArray.push(apool.numToAttrib[propName][0]);
-                }
-        }
-        return propsArray;
-};
-
-
-/*
  * analyzeLine
  * Lists discovery
  *
@@ -125,6 +110,5 @@ var findURLs = function (text) {
  *
  */
 exports.createLineElement = createLineElement;
-exports.getPropertyNames = getPropertyNames;
 exports.findURLs = findURLs;
 exports.analyzeLine = analyzeLine;

@@ -163,119 +163,130 @@ var _getPadLinesXml = function (apool, atext, reqOptions, commentCollector) {
 
 /*
  * _getOneLineXml
- * Returns an XML representation for a pad line.
+ * Returns an XML representation for a pad line
+ * first it processes line attributes (if requested and if a linemarker exists)
+ * then it processes the inline attributes
+ * 
  */
 var _getOneLineXml = function(text, attribs, apool, reqOptions, commentCollector) {
-    var xmlStringAssembler = Changeset.stringAssembler();
-    var textIterator = Changeset.stringIterator(text);
-    var propertyNames = utils.getPropertyNames(apool);    
-    var operationHandler = new OperationsToXmlTranslator(propertyNames, apool, textIterator, DROPATTRIBUTES);
-    
+    // process line attributes
     var lineAttributes = [];
-    var lineAttributeResult = processLineAttributes(attribs, apool);
+    var lineAttributeResult = _processLineAttributes(attribs, apool);
     
-    
-    if (reqOptions.lineattribs === true && lineAttributeResult.hasLineAttributes) {
-        console.log(lineAttributeResult);
+    var lineAttributesEnabled = reqOptions.lineattribs === true && lineAttributeResult.hasLineAttributes;
+    if (lineAttributesEnabled) {
         lineAttributes = lineAttributeResult.lineAttributes;
-        textIterator.skip(1); // begin attribute processing after lmkr character
     }
     
-    var fromIndex = text.length - textIterator.remaining();
+    // shift textString by one if line attributes are found (due to linemarker '*')
+    var lineAttributeOffset = lineAttributesEnabled ? 1 : 0;
+    var remainingText = text.substring(lineAttributeOffset);
+    var remainingAttributes = Changeset.subattribution(attribs, lineAttributeOffset, text.length);
     
-    function getInlineAttributeString(numChars){
-        return Changeset.subattribution(attribs, fromIndex, fromIndex + numChars);
-    }
+    // get inline xml
+    var lineContentString = _getInlineXml(remainingText, remainingAttributes, apool, reqOptions.regex === true, commentCollector);
+
+    // create line xml from inlinexml and line attributes
+    return utils.createLineElement(lineAttributes, lineContentString);
+}; // end _getOneLineXml
+
+
+function _getInlineXml(text, attributeString, apool, regexEnabled, commentCollector) {
+    var operationHandler = new OperationsToXmlTranslator(apool, DROPATTRIBUTES, commentCollector);
+    var textIterator = Changeset.stringIterator(text);
+    var xmlStringAssembler = Changeset.stringAssembler();
     
-    function processLineAttributes (attribs, apool) {
-        var lineMarkerFound = false;
-        var lineAttributes = [];
-        
-        // start lineMarker (lmkr) check
-        var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
-
-        if (firstCharacterOfLineOpIterator.hasNext()) {
-            var singleOperation = firstCharacterOfLineOpIterator.next();
-
-            // iterate through attributes
-            Changeset.eachAttribNumber(singleOperation.attribs, function (a) {
-                lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
-
-                if (apool.numToAttrib[a][0] === "lmkr") {
-                    lineMarkerFound = true;
-                }
-            });
-        }
-        
-        return {
-            hasLineAttributes: lineMarkerFound,
-            lineAttributes: lineAttributes
-        };
-    }
-
-    /*
-     * getLineSegmentXml
-     * Gets text with length of 'numChars' starting from current position of lineIterator.
-     * Returns both, text with markup and plain text as literal object
-     * { withMarkup: ..., plainText: ... }
-     *
-     */
-    function getLineSegmentXml(attributeString) {
-        if (attributeString.length <= 0) {
-            return {
-                withMarkup: "",
-                plainText:  ""
-            };
-        } else {
-            var lineSegmentWithMarkup = "";
-            var lineSegmentWithoutMarkup = "";
-
-            operationHandler.reset();
-            
-            var opIterator = Changeset.opIterator(attributeString);
-
-            // begin iteration over spans (=operations) in line segment
-            while (opIterator.hasNext()) {
-                var currentOp = opIterator.next();
-                var opXml = operationHandler.getXml(currentOp, commentCollector);
-                //console.warn(opXml);
-                lineSegmentWithMarkup += opXml.withMarkup;
-                lineSegmentWithoutMarkup += opXml.plainText;
-            } // end iteration over spans in line segment
-
-            return {
-                withMarkup: lineSegmentWithMarkup + operationHandler.getEndTagsAfterLastOp(),
-                plainText:  lineSegmentWithoutMarkup
-            };
-        }
-    } // end getLineSegmentXml
-
+    var getNextAttributes = function(numberOfCharacters) {
+        return Changeset.subattribution(attributeString, 0, numberOfCharacters);
+    };
+    
     /*
      * Process URIs
      */
-    if (reqOptions.regex) {
+    if (regexEnabled) {
         var urls = utils.findURLs(text);
         
         urls.forEach(function(urlData) {
             var startIndex = urlData[0];
             var url = urlData[1];
 
-            xmlStringAssembler.append(getLineSegmentXml(getInlineAttributeString(startIndex - fromIndex)).withMarkup);
-
-            var uriText = getLineSegmentXml(getInlineAttributeString(url.length));
-
+            var lineSegmentBeforeUrl = _getLineSegmentXml(getNextAttributes(startIndex), operationHandler, textIterator);
+            var uriText = _getLineSegmentXml(getNextAttributes(url.length), operationHandler, textIterator);
+            
+            xmlStringAssembler.append(lineSegmentBeforeUrl.withMarkup);
             xmlStringAssembler.append('<matched-text key="uri" value="' + uriText.plainText + '">' + uriText.withMarkup + '</matched-text>');
         });
     }
+    var lineSegment = _getLineSegmentXml(getNextAttributes(textIterator.remaining()), operationHandler, textIterator);
     
-    xmlStringAssembler.append(getLineSegmentXml(getInlineAttributeString(textIterator.remaining())).withMarkup);
+    xmlStringAssembler.append(lineSegment.withMarkup);
 
     var lineContentString = xmlStringAssembler.toString();
+    return lineContentString;
+}
 
-    return utils.createLineElement(lineAttributes, lineContentString);
+/*
+* getLineSegmentXml
+* Gets text with length of 'numChars' starting from current position of lineIterator.
+* Returns both, text with markup and plain text as literal object
+* { withMarkup: ..., plainText: ... }
+*
+*/
+function _getLineSegmentXml(attributeString, operationHandler, textIterator) {
+   if (attributeString.length <= 0) {
+       return {
+           withMarkup: "",
+           plainText:  ""
+       };
+   } else {
+       var lineSegmentWithMarkup = "";
+       var lineSegmentWithoutMarkup = "";
 
+       operationHandler.reset();
 
-}; // end _getOneLineXml
+       var opIterator = Changeset.opIterator(attributeString);
+
+       // begin iteration over spans (=operations) in line segment
+       while (opIterator.hasNext()) {
+           var currentOp = opIterator.next();
+           var opXml = operationHandler.getXml(currentOp, textIterator);
+           //console.warn(opXml);
+           lineSegmentWithMarkup += opXml.withMarkup;
+           lineSegmentWithoutMarkup += opXml.plainText;
+       } // end iteration over spans in line segment
+
+       return {
+           withMarkup: lineSegmentWithMarkup + operationHandler.getEndTagsAfterLastOp(),
+           plainText:  lineSegmentWithoutMarkup
+       };
+   }
+} // end getLineSegmentXml
+
+function _processLineAttributes (attribs, apool) {
+    var lineMarkerFound = false;
+    var lineAttributes = [];
+
+    // start lineMarker (lmkr) check
+    var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
+
+    if (firstCharacterOfLineOpIterator.hasNext()) {
+        var singleOperation = firstCharacterOfLineOpIterator.next();
+
+        // iterate through attributes
+        Changeset.eachAttribNumber(singleOperation.attribs, function (a) {
+            lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
+
+            if (apool.numToAttrib[a][0] === "lmkr") {
+                lineMarkerFound = true;
+            }
+        });
+    }
+
+    return {
+        hasLineAttributes: lineMarkerFound,
+        lineAttributes: lineAttributes
+    };
+}
 
 
 /*

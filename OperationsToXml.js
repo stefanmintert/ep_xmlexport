@@ -6,7 +6,7 @@ var xmlescape = require("xml-escape");
  *
  * Handles the transformation of operations to XML
  */
-var OperationsToXmlTranslator = function(propertyNames, apool, lIterator, dropAttributes) {
+var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector) {
     
     /*
      * openElements
@@ -55,13 +55,13 @@ var OperationsToXmlTranslator = function(propertyNames, apool, lIterator, dropAt
 
     var propVals = [false, false, false];
     var tags2close = [];
+    var propertyNames = _getPropertyNames(apool);
     var dropAttributeIndexes = dropAttributes.map(function(attribute){
         return propertyNames.indexOf(attribute);
     });
     
 
-    var attributePool = apool, 
-        lineIterator = lIterator;
+    var attributePool = apool;
 
     var _getPropVal = function(n) {
         return propVals[n];
@@ -107,6 +107,19 @@ var OperationsToXmlTranslator = function(propertyNames, apool, lIterator, dropAt
         }
         return orderedEndTagsString;
     }
+    
+    /*
+    * Collect all property names (=attribute names) which are used in apool
+    */
+   function _getPropertyNames(apool) {
+        var propsArray = [];
+        for (var propName in apool.numToAttrib) {
+             if (apool.numToAttrib.hasOwnProperty(propName)) {
+                 propsArray.push(apool.numToAttrib[propName][0]);
+             }
+        }
+        return propsArray;
+   };
 
 
     var reset = function() {
@@ -134,7 +147,7 @@ var OperationsToXmlTranslator = function(propertyNames, apool, lIterator, dropAt
      * Transforms a given operation to XML.
      *
      */
-     var getXml = function(op, commentCollector) {
+     var getXml = function(op, textIterator) {
         var propChanged = false;
         var opTextWithMarkup = "";
 
@@ -222,7 +235,7 @@ var OperationsToXmlTranslator = function(propertyNames, apool, lIterator, dropAt
             chars--; // exclude newline at end of line, if present
         }
 
-        var s = xmlescape(lineIterator.take(chars));
+        var s = xmlescape(textIterator.take(chars));
 
         return {
             withMarkup: opTextWithMarkup + s,
