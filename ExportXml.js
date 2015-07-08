@@ -72,8 +72,18 @@ function _loadPadData (padId, reqOptions, callback) {
  * The following code is mainly based on the code from the LaTeX export,
  * which might be based on some other export plugin.
  * I keep the comment although we're exporting XML, not LaTeX or HTML
+ * 
+ * The LineMarkupManager cares for creating the correct markup for lines, line attributes and lists.
+ * It keeps track of list levels and correctly closing list items.
+ * It does not care for inline markup, it just includes it as a string.
+ * 
+ * Usage:
+ * var lineMarkupManager = new LineMarkupManager(listsEnabled);
+ * lineMarkupManager.processLine(line, inlineContent, lineAttributesEnabled);
+ * var xml = lineMarkupManager.finishAndReturnXml();
+ * 
  */
-var LineManager = function(listsEnabled){
+var LineMarkupManager = function(listsEnabled){
     // Need to deal with constraints imposed on HTML lists; can
     // only gain one level of nesting at once, can't change type
     // mid-list, etc.
@@ -118,23 +128,127 @@ var LineManager = function(listsEnabled){
         _pushContent: function(lineContent) {
             xmlPieces.push(lineContent, "\n");
         },
+        _wrapWithLineElement: function(lineAttributes, lineContentString) {
+            var lineStartTag = '<line';
+            for (var i = 0; i < lineAttributes.length; i++) {
+                lineStartTag += ' ';
+                lineStartTag += lineAttributes[i][0];
+                lineStartTag += '="';
+                lineStartTag += lineAttributes[i][1];
+                lineStartTag += '"';
+            }
+            lineStartTag += ">";
+            var lineEndTag = '</line>';
+
+            return lineStartTag + lineContentString + lineEndTag;
+        },
         finishAndReturnXml: function() {
             for (var k = lists.length - 1; k >= 0; k--) {
                 xmlPieces.push("\n</list>\n"); // number or bullet
             }
             return xmlPieces.join("");
         },
-        processLine: function(listLevel, listTypeName, lineContent) {
-            //If we are inside a list
-            if (listLevel && listsEnabled) {
-                this._startListItem(listLevel, listTypeName, lineContent);
+        processLine: function(line, lineContent, lineAttributesEnabled) {
+            var lineAttributes = lineAttributesEnabled ? line.getLineAttributes() : [];
+            var lineElement = this._wrapWithLineElement(lineAttributes, lineContent);
+            //If we are inside a list: wrap with list elements
+            if (line.getListLevel() && listsEnabled) {
+                this._startListItem(line.getListLevel(), line.getListType(), lineElement);
             } else { //outside any list
                 this._closeListItemsIfNecessary();
-                this._pushContent(lineContent);
+                this._pushContent(lineElement);
             }
         }
     };
 };
+
+
+var Line = function(aline, text, apool){
+    var line = {};
+    function _analyzeLists () {
+        // identify list
+        var lineMarker = false;
+        line.listLevel = 0;
+        if (aline) {
+            var opIter = Changeset.opIterator(aline);
+            if (opIter.hasNext()) {
+                var listType = Changeset.opAttributeValue(opIter.next(), 'list', apool);
+
+                if (listType) {
+                    lineMarker = true;
+                    listType = /([a-z]+)([12345678])/.exec(listType);
+                    if (listType) {
+                        line.listTypeName = listType[1];
+                        line.listLevel = Number(listType[2]);
+                    }
+                }
+            }
+        }
+        if (lineMarker) {
+            // line text without linemarker ("*")
+            line.text = text.substring(1);
+            line.aline = Changeset.subattribution(aline, 1);
+        } else {
+            line.text = text;
+            line.aline = aline;
+        }
+
+        return line;
+    }
+    
+    function _analyzeLineAttributes () {
+        var lineMarkerFound = false;
+        var lineAttributes = [];
+
+        // start lineMarker (lmkr) check
+        var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(aline, 0, 1));
+
+        if (firstCharacterOfLineOpIterator.hasNext()) {
+            var singleOperation = firstCharacterOfLineOpIterator.next();
+
+            // iterate through attributes
+            Changeset.eachAttribNumber(singleOperation.attribs, function (a) {
+                lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
+
+                if (apool.numToAttrib[a][0] === "lmkr") {
+                    lineMarkerFound = true;
+                }
+            });
+        }
+        
+        line.hasLineAttributes = lineMarkerFound;
+        line.lineAttributes = lineAttributes;
+    }
+    
+    _analyzeLists();
+    _analyzeLineAttributes();
+    
+    return {
+        getPlaintext: function(removeLinemarker){
+            return removeLinemarker ? line.text : text;
+        },
+        getAttributeString: function(removeLineAttributes){
+            return removeLineAttributes ? line.aline : aline;
+        },
+        hasLineAttributes: function(){
+            return line.hasLineAttributes;
+        },
+        getLineAttributes: function() {
+            return line.lineAttributes;
+        },
+        hasList: function(){
+            return line.listLevel > 0;
+        },
+        getListLevel: function(){
+            return line.listLevel;
+        },
+        getListType: function(){
+            return line.listTypeName;
+        }
+        
+    };
+};
+
 
 /*
  * _getPadLinesXml
@@ -148,47 +262,28 @@ var _getPadLinesXml = function (apool, atext, reqOptions, commentCollector) {
     var textLines = atext.text.slice(0, -1).split('\n');
     var attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
 
-    var lineManager = new LineManager(reqOptions.lists === true);
+    var lineMarkupManager = new LineMarkupManager(reqOptions.lists === true);
 
     for (var i = 0; i < textLines.length; i++) {
-        var line = utils.analyzeLine(textLines[i], attribLines[i], apool, reqOptions.lists === true);
-        var lineContent = _getOneLineXml(line.text, line.aline, apool, reqOptions, commentCollector);
+        var line = new Line(attribLines[i], textLines[i], apool);
         
-        lineManager.processLine(line.listLevel, line.listTypeName, lineContent);
+        // get line attributes
+        var lineAttributesEnabled = reqOptions.lineattribs === true && line.hasLineAttributes();
+        
+        // shift textString by one if line attributes are found (due to linemarker '*')
+        var removeLinemarker = reqOptions.lists === true || lineAttributesEnabled;
+        
+        // get inline content
+        var inlineContent = _getInlineXml(
+                line.getPlaintext(removeLinemarker), line.getAttributeString(removeLinemarker), 
+                apool, reqOptions.regex === true, commentCollector);
+        
+        // wrap inline content with markup (line, lists)
+        lineMarkupManager.processLine(line, inlineContent, lineAttributesEnabled);
     }
 
-    return lineManager.finishAndReturnXml();
+    return lineMarkupManager.finishAndReturnXml();
 };
-
-
-/*
- * _getOneLineXml
- * Returns an XML representation for a pad line
- * first it processes line attributes (if requested and if a linemarker exists)
- * then it processes the inline attributes
- * 
- */
-var _getOneLineXml = function(text, attribs, apool, reqOptions, commentCollector) {
-    // process line attributes
-    var lineAttributes = [];
-    var lineAttributeResult = _processLineAttributes(attribs, apool);
-    
-    var lineAttributesEnabled = reqOptions.lineattribs === true && lineAttributeResult.hasLineAttributes;
-    if (lineAttributesEnabled) {
-        lineAttributes = lineAttributeResult.lineAttributes;
-    }
-    
-    // shift textString by one if line attributes are found (due to linemarker '*')
-    var lineAttributeOffset = lineAttributesEnabled ? 1 : 0;
-    var remainingText = text.substring(lineAttributeOffset);
-    var remainingAttributes = Changeset.subattribution(attribs, lineAttributeOffset, text.length);
-    
-    // get inline xml
-    var lineContentString = _getInlineXml(remainingText, remainingAttributes, apool, reqOptions.regex === true, commentCollector);
-
-    // create line xml from inlinexml and line attributes
-    return utils.createLineElement(lineAttributes, lineContentString);
-}; // end _getOneLineXml
 
 
 function _getInlineXml(text, attributeString, apool, regexEnabled, commentCollector) {
@@ -261,33 +356,6 @@ function _getLineSegmentXml(attributeString, operationHandler, textIterator) {
        };
    }
 } // end getLineSegmentXml
-
-function _processLineAttributes (attribs, apool) {
-    var lineMarkerFound = false;
-    var lineAttributes = [];
-
-    // start lineMarker (lmkr) check
-    var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(attribs, 0, 1));
-
-    if (firstCharacterOfLineOpIterator.hasNext()) {
-        var singleOperation = firstCharacterOfLineOpIterator.next();
-
-        // iterate through attributes
-        Changeset.eachAttribNumber(singleOperation.attribs, function (a) {
-            lineAttributes.push([apool.numToAttrib[a][0], apool.numToAttrib[a][1]]);
-
-            if (apool.numToAttrib[a][0] === "lmkr") {
-                lineMarkerFound = true;
-            }
-        });
-    }
-
-    return {
-        hasLineAttributes: lineMarkerFound,
-        lineAttributes: lineAttributes
-    };
-}
-
 
 /*
  * Define exports
