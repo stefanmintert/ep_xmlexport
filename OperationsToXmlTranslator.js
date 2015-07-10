@@ -2,17 +2,16 @@
 var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 var xmlescape = require("xml-escape");
 /*
- * operationHandler
- *
- * Handles the transformation of operations to XML
+ * Translates epl operations to XML
+ * @param apool
+ * @param dropAttributes attributes to be ignored
+ * @param commentCollector collects referenced comments
+ * 
  */
 var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector) {
     
     /*
-     * openElements
-     *
      * keeps track of opened, not yet closed elements.
-     *
      */
     var openElements = (function() {
         var openElems = [];
@@ -47,12 +46,12 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
         };
     })();
 
-
-
     var ENTER = 1;
     var STAY = 2;
     var LEAVE = 0;
 
+    // stores the current status of attribute processing
+    // TODO document this
     var propVals = [false, false, false];
     var tags2close = [];
     var propertyNames = _getPropertyNames(apool);
@@ -84,8 +83,6 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
     };
 
     /*
-     * _getOrderedEndTags()
-     *
      * Get all end-tags for all open elements in the current line.
      * The function keeps the proper order of opened elements.
      * (Which might be required if we should switch to different
@@ -142,10 +139,10 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
 
 
     /*
-     * getXml(operation)
-     *
-     * Transforms a given operation to XML.
-     *
+     * Transforms a given operation to an XML fragment
+     * // TODO more documentation
+     * @param op
+     * @param textIterator 
      */
      var getXml = function(op, textIterator) {
         var propChanged = false;

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>A List:</line>
+
+<list type='bullet'>
+<item><line><attribute key="bold" value="true">with overlapping</attribute><!-- /bold --></line></item>
+<item><line><attribute key="bold" value="true">format</attribute><!-- /bold --></line></item>
+</list>
+<line></line>
+</content>
+
+</pad>

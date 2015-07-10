@@ -15,6 +15,7 @@ while read -r line || [[ -n $line ]]; do
     curl --silent $ETHERPAD_HOST/p/$TESTCASE/export/xml > referenceXml/$TESTCASE.xml
     curl --silent $ETHERPAD_HOST/p/$TESTCASE/export/xml?lineattribs=true > referenceXml/$TESTCASE-lineattribs.xml
     curl --silent $ETHERPAD_HOST/p/$TESTCASE/export/xml?lists=true > referenceXml/$TESTCASE-lists.xml
+    curl --silent $ETHERPAD_HOST/p/$TESTCASE/export/xml?lists=true\&lineattribs=true > referenceXml/$TESTCASE-lists_lineattribs.xml
     curl --silent $ETHERPAD_HOST/p/$TESTCASE/export/xml?regex=true > referenceXml/$TESTCASE-regex.xml
     curl --silent $ETHERPAD_HOST/p/$TESTCASE/export/xml?pretty=true > referenceXml/$TESTCASE-pretty.xml
 done < "testcases.list"
