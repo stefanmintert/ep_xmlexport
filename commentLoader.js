@@ -1,8 +1,6 @@
-var ERR = require("ep_etherpad-lite/node_modules/async-stacktrace");
+var throwIfError = require("ep_etherpad-lite/node_modules/async-stacktrace");
 
 var commentsPlugin = false;
-var jsxml = false;
-
 
 try {
     commentsPlugin = require("../ep_comments_page/commentManager.js");
@@ -11,42 +9,27 @@ try {
     console.log(JSON.stringify(e));
 }
 
-try {
-    jsxml = require("jsxml");
-} catch (e) {
-    console.log("Can't load jsxml. Implication: I can't use comments plug-in.");
-    console.log(JSON.stringify(e));
-    commentsPlugin = false;
-}
-
-var getCommentsXml = function(padId, referencedCommentIds, callback) {
+var getComments = function(padId, referencedCommentIds, callback) {
     _loadComments(padId, function(comments){
-        //console.warn("loaded comments: " + JSON.stringify(comments));
         var referencedComments = comments.filter(function(comment){
             return referencedCommentIds.indexOf(comment.key) > -1;
         });
         if (referencedComments.length < referencedCommentIds.length) {
             console.error("not all referenced comments " + JSON.stringify(referencedComments) + " are available in data! " + JSON.stringify(referencedCommentIds) );
         }
-        var xmlString = comments.length > 0 ? _commentsToXml(referencedComments) : "";
-        //console.warn("comment xml string: " + xmlString);
-        callback(xmlString);
+        callback(_commentsToJsonml(referencedComments));
     });
 };
 
 function _loadComments(padId, callback) {
     if (commentsPlugin) {
-        try {
-            commentsPlugin.getComments(padId, function(err, padComments) {
-                ERR(err);
-                commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
-                    ERR(err);
-                    callback(_getCommentArray(padComments.comments, commentReplies.replies));
-                });
+        commentsPlugin.getComments(padId, function(err, padComments) {
+            throwIfError(err);
+            commentsPlugin.getCommentReplies(padId, function(err, commentReplies) {
+                throwIfError(err);
+                callback(_getCommentArray(padComments.comments, commentReplies.replies));
             });
-        } catch (e) {
-            console.log("[ERROR] Could not retrieve comments." + e);
-        }
+        });
     }
 };
 
@@ -85,17 +68,16 @@ function _repliesForComment (replies, commentId) {
 };
 
 
-function _commentsToXml(comments) {
-    xmlString = "<comments>";
-    for (var i = 0; i < comments.length; i++) {
-        xmlString += _commentToXml(comments[i]);
-    }
-    xmlString += "</comments>\n";
-    return xmlString;
+function _commentsToJsonml(comments) {    
+    var commentsElement = [ "comments" ];
+    comments.forEach(function(comment){
+        commentsElement.push(_commentToJsonml(comment));
+    });
+    return commentsElement;
 }
 
 
-function _commentToXml(comment) {
+function _commentToJsonml(comment) {
     var newCommentElement = [
         "comment", {
             id: comment.key.toString(),
@@ -148,14 +130,9 @@ function _commentToXml(comment) {
         newCommentElement.push(replies);
     }
 
-    return "\n" + jsxml.toXml(newCommentElement);
+    return newCommentElement;
 };
 
 
-/*
- * Define exports
- *
- */
-exports.getCommentsXml 	= getCommentsXml;
-
+exports.getComments = getComments;
 

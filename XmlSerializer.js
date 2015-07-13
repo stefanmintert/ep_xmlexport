@@ -1,4 +1,13 @@
 var xmlescape = require("xml-escape");
+var jsxml = false;
+
+try {
+    jsxml = require("jsxml");
+} catch (e) {
+    console.log("Can't load jsxml. Implication: I can't use comments plug-in.");
+    console.log(JSON.stringify(e));
+    commentsPlugin = false;
+}
 
 var XmlSerializer = {
     startDocument: function(){
@@ -51,6 +60,20 @@ var XmlSerializer = {
     },
     getMatchedText: function(key, value, contentMarkup) {
         return '<matched-text key="'+key+'" value="' + value + '">' + contentMarkup + '</matched-text>';
+    },
+    /**
+     * creates the complete document, given the completely rendered document content
+     * and all referenced comment as an jsonml compliant object
+     * @param {type} contentMarkup
+     * @param {type} comments
+     * @returns {String}
+     */
+    getWrapup: function(contentMarkup, commentsMl){
+        return this.startDocument() + this.startContent() +
+            contentMarkup + 
+            this.endContent() + 
+            (jsxml && commentsMl.length > 1 ? jsxml.toXml(commentsMl) : "") + 
+            this.endDocument();
     }
 };
 

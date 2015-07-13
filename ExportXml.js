@@ -1,11 +1,11 @@
 var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 var padManager = require("ep_etherpad-lite/node/db/PadManager");
 var throwIfError = require("ep_etherpad-lite/node_modules/async-stacktrace");
-var commentsXml = require("./commentsXml");
-var xmlescape = require("xml-escape");
-var Line = require("./Line.js");
-var OperationsToXmlTranslator = require("./OperationsToXmlTranslator");
-var serializer = require("./XmlSerializer");
+var commentLoader = require("./commentLoader");
+var Line = require("./Line");
+var OperationTranslator = require("./OperationTranslator");
+var xmlSerializer = require("./XmlSerializer");
+var jsonSerializer = require("./JsonSerializer");
 
 //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
 var DROPATTRIBUTES = [];
@@ -35,16 +35,15 @@ var CommentCollector = function(){
  * Wraps the line by line XML representing the pad content
  * in a root element and prepends an XML declaration
  */
-var getPadXmlDocument = function(padId, reqOptions, successCallback, errorCallback) {
+var getSerializedDocument = function(padId, reqOptions, successCallback, errorCallback) {
     try {
         var commentCollector = new CommentCollector();
+        var serializer = reqOptions.exportFormat === "json" ? jsonSerializer : xmlSerializer;
         _loadPadData(padId, reqOptions, function(apool, atext){
-            var contentXml = _getPadLinesXml(apool, atext, reqOptions, commentCollector);
-
-            commentsXml.getCommentsXml(padId, commentCollector.list(), function(commentsXml){
-                var outputXml = serializer.startDocument() + serializer.startContent()+
-                        contentXml + serializer.endContent() + commentsXml + serializer.endDocument();
-                successCallback(outputXml);
+            var contentMarkup = _getPadLinesMarkup(apool, atext, reqOptions, commentCollector, serializer);
+            
+            commentLoader.getComments(padId, commentCollector.list(), function(comments){
+                successCallback(serializer.getWrapup(contentMarkup, comments));
             });
         });
     } catch(error) {
@@ -69,14 +68,13 @@ function _loadPadData (padId, reqOptions, callback) {
 };
 
 /*
- * _getPadLinesXml
  * Returns an XML fragment for the content (atext = attribs+text) of a pad.
  * The result is just a sequence of <line>...</line> elements, except if
  * lists up-translation is turned-on.
  *
  * The result is not well-formed.
  */
-var _getPadLinesXml = function (apool, atext, reqOptions, commentCollector) {
+var _getPadLinesMarkup = function (apool, atext, reqOptions, commentCollector, serializer) {
     var textLines = atext.text.slice(0, -1).split('\n');
     var attribLines = Changeset.splitAttributionLines(atext.attribs, atext.text);
 
@@ -91,9 +89,9 @@ var _getPadLinesXml = function (apool, atext, reqOptions, commentCollector) {
         var lineAttributesEnabled = !reqOptions.lists  && reqOptions.lineattribs && line.hasLineAttributes();
         
         // get inline content
-        var inlineContent = _getInlineXml(
+        var inlineContent = _getInlineMarkup(
                 line.getPlaintext(removeLinemarker), line.getAttributeString(removeLinemarker), 
-                apool, reqOptions.regex === true, commentCollector);
+                apool, reqOptions.regex === true, commentCollector, serializer);
         
         // wrap inline content with markup (line, lists)
         lineMarkupManager.processLine(line, inlineContent, lineAttributesEnabled);
@@ -103,8 +101,8 @@ var _getPadLinesXml = function (apool, atext, reqOptions, commentCollector) {
 };
 
 
-function _getInlineXml(text, attributeString, apool, regexEnabled, commentCollector) {
-    var operationsToXmlTranslator = new OperationsToXmlTranslator(apool, DROPATTRIBUTES, commentCollector, serializer);
+function _getInlineMarkup(text, attributeString, apool, regexEnabled, commentCollector, serializer) {
+    var operationTranslator = new OperationTranslator(apool, DROPATTRIBUTES, commentCollector, serializer);
     var textIterator = Changeset.stringIterator(text);
     var xmlStringAssembler = Changeset.stringAssembler();
     
@@ -122,10 +120,10 @@ function _getInlineXml(text, attributeString, apool, regexEnabled, commentCollec
         var match;
         while ((match = urlMatcher.next())) {
             var attributesBeforeUrl = _getNextAttributes(match.start);
-            var lineSegmentBeforeUrl = _getLineSegmentXml(attributesBeforeUrl, operationsToXmlTranslator, textIterator);
+            var lineSegmentBeforeUrl = _getLineSegmentMarkup(attributesBeforeUrl, operationTranslator, textIterator);
             
             var attributesInUrl = _getNextAttributes(match.matchLength);
-            var uriText = _getLineSegmentXml(attributesInUrl, operationsToXmlTranslator, textIterator);
+            var uriText = _getLineSegmentMarkup(attributesInUrl, operationTranslator, textIterator);
             
             xmlStringAssembler.append(lineSegmentBeforeUrl.withMarkup);
             xmlStringAssembler.append(serializer.getMatchedText("uri", uriText.plainText, uriText.withMarkup));
@@ -134,7 +132,7 @@ function _getInlineXml(text, attributeString, apool, regexEnabled, commentCollec
     console.log("complete attribute string: "+ attributeString);
     var remainingAttributes = _getNextAttributes(textIterator.remaining());
     console.log("remainingAttributes: "+ remainingAttributes);
-    var lineSegment = _getLineSegmentXml(remainingAttributes, operationsToXmlTranslator, textIterator);
+    var lineSegment = _getLineSegmentMarkup(remainingAttributes, operationTranslator, textIterator);
     
     xmlStringAssembler.append(lineSegment.withMarkup);
 
@@ -150,7 +148,7 @@ function _getInlineXml(text, attributeString, apool, regexEnabled, commentCollec
 * { withMarkup: ..., plainText: ... }
 *
 */
-function _getLineSegmentXml(attributeString, operationsToXmlTranslator, textIterator) {
+function _getLineSegmentMarkup(attributeString, operationTranslator, textIterator) {
    if (attributeString.length <= 0) {
        return {
            withMarkup: "",
@@ -160,21 +158,21 @@ function _getLineSegmentXml(attributeString, operationsToXmlTranslator, textIter
        var lineSegmentWithMarkup = "";
        var lineSegmentWithoutMarkup = "";
 
-       operationsToXmlTranslator.reset();
+       operationTranslator.reset();
 
        var opIterator = Changeset.opIterator(attributeString);
 
        // begin iteration over spans (=operations) in line segment
        while (opIterator.hasNext()) {
            var currentOp = opIterator.next();
-           var opXml = operationsToXmlTranslator.getXml(currentOp, textIterator);
+           var opMarkup = operationTranslator.getMarkup(currentOp, textIterator);
            //console.warn(opXml);
-           lineSegmentWithMarkup += opXml.withMarkup;
-           lineSegmentWithoutMarkup += opXml.plainText;
+           lineSegmentWithMarkup += opMarkup.withMarkup;
+           lineSegmentWithoutMarkup += opMarkup.plainText;
        } // end iteration over spans in line segment
 
        return {
-           withMarkup: lineSegmentWithMarkup + operationsToXmlTranslator.getEndTagsAfterLastOp(),
+           withMarkup: lineSegmentWithMarkup + operationTranslator.getEndTagsAfterLastOp(),
            plainText:  lineSegmentWithoutMarkup
        };
    }
@@ -220,5 +218,5 @@ var CustomMatcher = function(regex, text){
  * Define exports
  *
  */
-exports.getPadXmlDocument = getPadXmlDocument;
+exports.getSerializedDocument = getSerializedDocument;
 

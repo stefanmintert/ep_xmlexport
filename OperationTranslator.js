@@ -134,7 +134,7 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
      * @param op
      * @param textIterator 
      */
-     var getXml = function(op, textIterator) {
+     var getMarkup = function(op, textIterator) {
         var propChanged = false;
         var opTextWithMarkup = "";
 
@@ -232,7 +232,7 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
 
     return {
         reset: reset,
-        getXml: getXml,
+        getMarkup: getMarkup,
         getEndTagsAfterLastOp: getEndTagsAfterLastOp
     };
 };

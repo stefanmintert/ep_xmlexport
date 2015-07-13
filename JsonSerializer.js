@@ -6,29 +6,29 @@ var JsonSerializer = {
         return '["pad",\n';
     },
     endDocument: function(){
-        return '\n]';
+        return ']';
     },
     startContent: function(){
-        return '["content", \n{';
+        return '["content", \n';
     },
     endContent: function(){
-        return ']\n';
+        return '""]\n';
     },
     startAttribute: function(key, value){
         return '["attribute", {"key": "'+key+'", "value": "'+value+'"},';
     },
     endAttribute: function(key){
-        return ']';
+        return '""], ';
     },
     startLine: function(lineAttributes){
         var lineStart = '["line", {';
         lineStart += '"lineAttributes": ' + JSON.stringify(lineAttributes);
         
-        lineStart += "}, \n[";
+        lineStart += "}, \n";
         return lineStart;
     },
     endLine: function(){
-        return '""]';
+        return '""],';
     },
     startList: function(listTypeName){
         return '\n["list", { "type": "' + listTypeName + '"},';
@@ -47,6 +47,20 @@ var JsonSerializer = {
     },
     getMatchedText: function(key, value, contentMarkup) {
         return '"' + contentMarkup + '", ';
+    },
+    /**
+     * creates the complete document, given the completely rendered document content
+     * and all referenced comment as an jsonml compliant object
+     * @param {type} contentMarkup
+     * @param {type} comments
+     * @returns {String}
+     */
+    getWrapup: function(contentMarkup, comments){
+        return this.startDocument() + this.startContent() +
+            contentMarkup + 
+            this.endContent() + 
+            (comments.length > 1 ? "," + JSON.stringify(comments) : "") + 
+            this.endDocument();
     }
 };
 
