@@ -110,7 +110,7 @@ var Line = function(aline, text, apool){
  * var xml = lineMarkupManager.finishAndReturnXml();
  * 
  */
-Line.LineMarkupManager = function(listsEnabled){
+Line.LineMarkupManager = function(listsEnabled, serializer){
     // Need to deal with constraints imposed on HTML lists; can
     // only gain one level of nesting at once, can't change type
     // mid-list, etc.
@@ -136,42 +136,34 @@ Line.LineMarkupManager = function(listsEnabled){
             //means we are on a deeper level of indentation than the previous line
             if (whichList >= lists.length) {
                 lists.push([listLevel, listTypeName]);
-                xmlPieces.push("\n<list type='" + listTypeName + "'>\n<item>", lineContent || "\n"); // number or bullet
+                xmlPieces.push(serializer.startList(listTypeName) + serializer.startItem(), lineContent); // number or bullet
             } else { //means we are getting closer to the lowest level of indentation
                 while (whichList < lists.length - 1) {
-                    xmlPieces.push("</item>\n</list>"); // number or bullet
+                    xmlPieces.push(serializer.endItem() + serializer.endList()); // number or bullet
                     lists.length--;
                 }
-                xmlPieces.push("</item>\n<item>", lineContent || "\n");
+                xmlPieces.push(serializer.endItem() + serializer.startItem(), lineContent);
             }
         },
         _closeListItemsIfNecessary: function() {
             //if was in a list: close it before
             while (lists.length > 0) {
-                xmlPieces.push("</item>\n</list>\n"); // number or bullet
+                xmlPieces.push(serializer.endItem() + serializer.endList()); // number or bullet
                 lists.length--;
             }
         },
         _pushContent: function(lineContent) {
-            xmlPieces.push(lineContent, "\n");
+            xmlPieces.push(lineContent + "\n");
         },
         _wrapWithLineElement: function(lineAttributes, lineContentString) {
-            var lineStartTag = '<line';
-            for (var i = 0; i < lineAttributes.length; i++) {
-                lineStartTag += ' ';
-                lineStartTag += lineAttributes[i][0];
-                lineStartTag += '="';
-                lineStartTag += lineAttributes[i][1];
-                lineStartTag += '"';
-            }
-            lineStartTag += ">";
-            var lineEndTag = '</line>';
+            var lineStartTag = serializer.startLine(lineAttributes);
+            var lineEndTag = serializer.endLine();
 
             return lineStartTag + lineContentString + lineEndTag;
         },
         finishAndReturnXml: function() {
             for (var k = lists.length - 1; k >= 0; k--) {
-                xmlPieces.push("\n</list>\n"); // number or bullet
+                xmlPieces.push(serializer.endList()); // number or bullet
             }
             return xmlPieces.join("");
         },

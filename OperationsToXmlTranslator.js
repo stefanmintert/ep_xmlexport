@@ -1,6 +1,4 @@
-
 var Changeset = require("ep_etherpad-lite/static/js/Changeset");
-var xmlescape = require("xml-escape");
 /*
  * Translates epl operations to XML
  * @param apool
@@ -8,7 +6,7 @@ var xmlescape = require("xml-escape");
  * @param commentCollector collects referenced comments
  * 
  */
-var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector) {
+var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector, serializer) {
     
     /*
      * keeps track of opened, not yet closed elements.
@@ -74,14 +72,6 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
         return propVals.length;
     };
 
-    var _getXmlStartTagForEplAttribute = function(key, val) {
-        return '<attribute key="' + key + '" value="' + val + '">';
-    };
-
-    var _getXmlEndTagForEplAttribute = function(key) {
-        return '</attribute><!-- /' + key + ' -->';
-    };
-
     /*
      * Get all end-tags for all open elements in the current line.
      * The function keeps the proper order of opened elements.
@@ -96,7 +86,7 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
             for (var j=0;j<tags2close.length;j++) {
                 if (tags2close[j] === openElements.get(i)) {
                     openElements.shift();
-                    orderedEndTagsString += _getXmlEndTagForEplAttribute(propertyNames[tags2close[j]]);
+                    orderedEndTagsString += serializer.endAttribute(propertyNames[tags2close[j]]);
                     i--;
                     break;
                 }
@@ -221,7 +211,7 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
                     openElements.unshift(l);
                     var aKey = propertyNames[l];
                     var aVal = attributePool.numToAttrib[l][1];
-                    opTextWithMarkup += _getXmlStartTagForEplAttribute(aKey, aVal);
+                    opTextWithMarkup += serializer.startAttribute(aKey, aVal);
                     propVals[l] = true;
                 }
             }
@@ -232,7 +222,7 @@ var OperationsToXmlTranslator = function(apool, dropAttributes, commentCollector
             chars--; // exclude newline at end of line, if present
         }
 
-        var s = xmlescape(textIterator.take(chars));
+        var s = serializer.escapeText(textIterator.take(chars));
 
         return {
             withMarkup: opTextWithMarkup + s,
