@@ -1,11 +1,6 @@
 var Changeset = require("ep_etherpad-lite/static/js/Changeset");
-var padManager = require("ep_etherpad-lite/node/db/PadManager");
-var throwIfError = require("ep_etherpad-lite/node_modules/async-stacktrace");
-var commentLoader = require("./commentLoader");
 var Line = require("./Line");
 var OperationTranslator = require("./OperationTranslator");
-var xmlSerializer = require("./XmlSerializer");
-var jsonSerializer = require("./JsonSerializer");
 
 //var DROPATTRIBUTES = ["insertorder"]; // exclude attributes from export
 var DROPATTRIBUTES = [];
@@ -27,52 +22,56 @@ var CommentCollector = function(){
     };
 };
 
-
-/*
- * getPadXmlDocument
- * Get a well-formed XML Document for a given pad.
- *
- * Wraps the line by line XML representing the pad content
- * in a root element and prepends an XML declaration
+/**
+ * this is a convenience regex matcher that iterates through the matches 
+ * and returns each start index and length
+ * @param {RegExp} regex
+ * @param {String} text
  */
-var getSerializedDocument = function(padId, reqOptions, successCallback, errorCallback) {
-    try {
-        var commentCollector = new CommentCollector();
-        var serializer = reqOptions.exportFormat === "json" ? jsonSerializer : xmlSerializer;
-        _loadPadData(padId, reqOptions, function(apool, atext){
-            var contentMarkup = _getPadLinesMarkup(apool, atext, reqOptions, commentCollector, serializer);
-            
-            commentLoader.getComments(padId, commentCollector.list(), function(comments){
-                successCallback(serializer.getWrapup(contentMarkup, comments));
-            });
-        });
-    } catch(error) {
-        errorCallback(error);
+var CustomMatcher = function(regex, text){
+    var nextIndex = 0;
+    var result = [];
+
+    var execResult;
+    while ((execResult = regex.exec(text))!== null) {
+        result.push({
+            start: execResult.index, 
+            matchLength: execResult[0].length});
     }
+
+    return {
+        next: function(){
+            return nextIndex < result.length ?
+                result[nextIndex++] :
+                null;
+        }
+    };
 };
 
 
-function _loadPadData (padId, reqOptions, callback) {
-    padManager.getPad(padId, function (err, pad) {
-        throwIfError(err);
-        
-        if (reqOptions.revision) {
-            pad.getInternalRevisionAText(reqOptions.revision, function (err, revisionAtext) {
-                throwIfError(err);
-                callback(pad.pool, revisionAtext);
-            });
-        } else {
-            callback(pad.pool, pad.atext);
-        }
+var getSerializedPad = function(pad, commentLoader, serializer, reqOptions, callback) {
+    var commentCollector = new CommentCollector();
+    var contentMarkup = _getPadLinesMarkup(pad.pool, pad.atext, reqOptions, commentCollector, serializer);
+    commentLoader.getComments(pad.id, commentCollector.list(), function(comments){
+        callback(serializer.getWrapup(contentMarkup, comments));
     });
 };
 
+
 /*
- * Returns an XML fragment for the content (atext = attribs+text) of a pad.
- * The result is just a sequence of <line>...</line> elements, except if
+ * Returns a Markup fragment for the content (atext = attribs+text) of a pad,
+ * using the given serializer. In case of an xml-serializer the result is just 
+ * a sequence of <line>...</line> elements, except if
  * lists up-translation is turned-on.
+ * 
+ * I.e. the result is not well-formed.
+ * 
+ * @param apool the epl attribute pool
+ * @param atext the epl attributed text
+ * @param reqOptions option object with properties: lists, lineattribs, regex
+ * @param commentCollector used to collect references to comments we need to include
+ * @param serializer a serializer instance (e.g. for json, xml)
  *
- * The result is not well-formed.
  */
 var _getPadLinesMarkup = function (apool, atext, reqOptions, commentCollector, serializer) {
     var textLines = atext.text.slice(0, -1).split('\n');
@@ -129,9 +128,7 @@ function _getInlineMarkup(text, attributeString, apool, regexEnabled, commentCol
             xmlStringAssembler.append(serializer.getMatchedText("uri", uriText.plainText, uriText.withMarkup));
         }
     }
-    console.log("complete attribute string: "+ attributeString);
     var remainingAttributes = _getNextAttributes(textIterator.remaining());
-    console.log("remainingAttributes: "+ remainingAttributes);
     var lineSegment = _getLineSegmentMarkup(remainingAttributes, operationTranslator, textIterator);
     
     xmlStringAssembler.append(lineSegment.withMarkup);
@@ -139,6 +136,17 @@ function _getInlineMarkup(text, attributeString, apool, regexEnabled, commentCol
     var lineContentString = xmlStringAssembler.toString();
     return lineContentString;
 }
+
+
+function _getUrlRegex () {
+    // copied from ACE
+    var _REGEX_WORDCHAR = /[\u0030-\u0039\u0041-\u005A\u0061-\u007A\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u0100-\u1FFF\u3040-\u9FFF\uF900-\uFDFF\uFE70-\uFEFE\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFDC]/;
+    var _REGEX_URLCHAR = new RegExp('(' + /[-:@a-zA-Z0-9_.,~%+\/\\?=&#;()$]/.source + '|' + _REGEX_WORDCHAR.source + ')');
+    var _REGEX_URL = new RegExp(/(?:(?:https?|s?ftp|ftps|file|smb|afp|nfs|(x-)?man|gopher|txmt):\/\/|mailto:)/.source + _REGEX_URLCHAR.source + '*(?![:.,;])' + _REGEX_URLCHAR.source, 'g');
+    return _REGEX_URL;
+};
+
+
 
 /*
 * @param attributeString an epl attribute string
@@ -166,7 +174,6 @@ function _getLineSegmentMarkup(attributeString, operationTranslator, textIterato
        while (opIterator.hasNext()) {
            var currentOp = opIterator.next();
            var opMarkup = operationTranslator.getMarkup(currentOp, textIterator);
-           //console.warn(opXml);
            lineSegmentWithMarkup += opMarkup.withMarkup;
            lineSegmentWithoutMarkup += opMarkup.plainText;
        } // end iteration over spans in line segment
@@ -176,47 +183,8 @@ function _getLineSegmentMarkup(attributeString, operationTranslator, textIterato
            plainText:  lineSegmentWithoutMarkup
        };
    }
-} // end getLineSegmentXml
+}
 
 
-var _getUrlRegex = function() {
-    // copied from ACE
-    var _REGEX_WORDCHAR = /[\u0030-\u0039\u0041-\u005A\u0061-\u007A\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u0100-\u1FFF\u3040-\u9FFF\uF900-\uFDFF\uFE70-\uFEFE\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFDC]/;
-    var _REGEX_URLCHAR = new RegExp('(' + /[-:@a-zA-Z0-9_.,~%+\/\\?=&#;()$]/.source + '|' + _REGEX_WORDCHAR.source + ')');
-    var _REGEX_URL = new RegExp(/(?:(?:https?|s?ftp|ftps|file|smb|afp|nfs|(x-)?man|gopher|txmt):\/\/|mailto:)/.source + _REGEX_URLCHAR.source + '*(?![:.,;])' + _REGEX_URLCHAR.source, 'g');
-    return _REGEX_URL;
-};
-
-/**
- * this is a convenience regex matcher that iterates through the matches 
- * and returns each start index and length
- * @param {RegExp} regex
- * @param {String} text
- */
-var CustomMatcher = function(regex, text){
-    var nextIndex = 0;
-    var result = [];
-
-    var execResult;
-    while ((execResult = regex.exec(text))!== null) {
-        result.push({
-            start: execResult.index, 
-            matchLength: execResult[0].length});
-    }
-
-    return {
-        next: function(){
-            return nextIndex < result.length ?
-                result[nextIndex++] :
-                null;
-        }
-    };
-};
-
-
-/*
- * Define exports
- *
- */
-exports.getSerializedDocument = getSerializedDocument;
+exports.getSerializedPad = getSerializedPad;
 

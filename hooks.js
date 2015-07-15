@@ -1,17 +1,10 @@
 var path = require('path');
 var eejs = require("ep_etherpad-lite/node/eejs");
-var exportXml = require('./ExportXml');
-var prettyData = false;
-
-try {
-    prettyData = require('pretty-data').pd;
-} catch (e) {
-    console.log("Can't load pretty-data.");
-    console.log(JSON.stringify(e));
-}
+var ExportService = require("./ExportService");
 
 
 exports.expressCreateServer = function (hook_name, args, cb) {
+    var contentTypes = { json: 'application/json', xml: 'plain/xml'};
     var _evalToBoolean = function(stringValue) {
         return typeof stringValue !== 'undefined' && stringValue === 'true';
     };
@@ -31,13 +24,9 @@ exports.expressCreateServer = function (hook_name, args, cb) {
         var options = _getOptions(req);
         options.exportFormat = "xml";
 
-        exportXml.getSerializedDocument(padID, options, function(result) {
-            res.contentType('plain/xml');
-            if (prettyData && options.pretty) {
-                res.send(prettyData.xml(result));
-            } else {
-                res.send(result);
-            }
+        ExportService.loadAndSerializePad(padID, options, function(result) {
+            res.contentType(contentTypes[options.exportFormat]);
+            res.send(result);
         }, function(error) {
             res.status(500).send(error);
         });
@@ -51,13 +40,9 @@ exports.expressCreateServer = function (hook_name, args, cb) {
         var options = _getOptions(req);
         options.exportFormat = "json";
 
-        exportXml.getSerializedDocument(padID, options, function(result) {
-            res.contentType('application/json');
-            if (prettyData && options.pretty) {
-                res.send(prettyData.json(result));
-            } else {
-                res.send(result);
-            }
+        ExportService.loadAndSerializePad(padID, options, function(result) {
+            res.contentType(contentTypes[options.exportFormat]);
+            res.send(result);
         }, function(error) {
             res.status(500).send(error);
         });
