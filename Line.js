@@ -162,7 +162,10 @@ Line.LineMarkupManager = function(listsEnabled, serializer){
             return lineStartTag + lineContentString + lineEndTag;
         },
         finishAndReturnXml: function() {
-            for (var k = lists.length - 1; k >= 0; k--) {
+            for (var k = 0; k < lists.length; k++) {
+                if (k === 0) {
+                    xmlPieces.push(serializer.endItem());
+                }
                 xmlPieces.push(serializer.endList()); // number or bullet
             }
             return xmlPieces.join("");
