@@ -12,7 +12,6 @@ var Line = function(aline, text, apool){
     var line = {};
     function _analyzeLists () {
         // identify list
-        var lineMarker = false;
         line.listLevel = 0;
         if (aline) {
             var opIter = Changeset.opIterator(aline);
@@ -28,14 +27,6 @@ var Line = function(aline, text, apool){
                     }
                 }
             }
-        }
-        if (lineMarker) {
-            // line text without linemarker ("*")
-            line.text = text.substring(1);
-            line.aline = Changeset.subattribution(aline, 1);
-        } else {
-            line.text = text;
-            line.aline = aline;
         }
 
         return line;
@@ -63,6 +54,15 @@ var Line = function(aline, text, apool){
         
         line.hasLineAttributes = lineMarkerFound;
         line.lineAttributes = lineAttributes;
+        
+        if (line.hasLineAttributes) {
+            // line text without linemarker ("*")
+            line.text = text.substring(1);
+            line.aline = Changeset.subattribution(aline, 1);
+        } else {
+            line.text = text;
+            line.aline = aline;
+        }
     }
     
     _analyzeLists();
