@@ -543,6 +543,12 @@ REPLACE INTO `store` (`key`, `value`) VALUES ('pad:test-multilist:revs:57','{\"c
 REPLACE INTO `store` (`key`, `value`) VALUES ('pad:test-multilist:revs:58','{\"changeset\":\"Z:2j>3|5=21=g*0+3$al \",\"meta\":{\"author\":\"a.hiANkoD7mxzPJ70R\",\"timestamp\":1436541668130}}');
 REPLACE INTO `store` (`key`, `value`) VALUES ('pad:test-multilist:revs:60','{\"changeset\":\"Z:2q>0*9|6=2p$\",\"meta\":{\"author\":\"a.hiANkoD7mxzPJ70R\",\"timestamp\":1436541901861}}');
 REPLACE INTO `store` (`key`, `value`) VALUES ('pad:test-multilist:revs:59','{\"changeset\":\"Z:2m>4|5=21=j*0+4$text\",\"meta\":{\"author\":\"a.hiANkoD7mxzPJ70R\",\"timestamp\":1436541668632}}');
+REPLACE INTO `store` (`key`, `value`) VALUES ('pad:test-list-at-document-end','{\"atext\":{\"text\":\"Liste\\n*Punkt1\\n\",\"attribs\":\"|1+6*1*2*3+1|1+7\"},\"pool\":{\"numToAttrib\":{\"0\":[\"author\",\"a.hiANkoD7mxzPJ70R\"],\"1\":[\"insertorder\",\"first\"],\"2\":[\"list\",\"bullet1\"],\"3\":[\"lmkr\",\"1\"],\"4\":[\"author\",\"\"]},\"nextNum\":5},\"head\":2,\"chatHead\":-1,\"publicStatus\":false,\"passwordHash\":null,\"savedRevisions\":[]}');
+REPLACE INTO `store` (`key`, `value`) VALUES ('pad:test-list-at-document-end:revs:1','{\"changeset\":\"Z:6c<5y|5-6b*0|1+6*0*1*2*3+1*0+6$Liste\\n*Punkt1\",\"meta\":{\"author\":\"a.hiANkoD7mxzPJ70R\",\"timestamp\":1437403374031}}');
+REPLACE INTO `store` (`key`, `value`) VALUES ('pad:test-list-at-document-end:revs:0','{\"changeset\":\"Z:1>6b|5+6b$Welcome to Etherpad!\\n\\nThis pad text is synchronized as you type, so that everyone viewing this page sees the same text. This allows you to collaborate seamlessly on documents!\\n\\nGet involved with Etherpad at http://etherpad.org\\n\",\"meta\":{\"author\":\"\",\"timestamp\":1437397047614,\"atext\":{\"text\":\"Welcome to Etherpad!\\n\\nThis pad text is synchronized as you type, so that everyone viewing this page sees the same text. This allows you to collaborate seamlessly on documents!\\n\\nGet involved with Etherpad at http://etherpad.org\\n\\n\",\"attribs\":\"|6+6c\"}}}');
+REPLACE INTO `store` (`key`, `value`) VALUES ('pad2readonly:test-list-at-document-end','\"r.e814ee0640aa700f3bb4bc504301cf8b\"');
+REPLACE INTO `store` (`key`, `value`) VALUES ('readonly2pad:r.e814ee0640aa700f3bb4bc504301cf8b','\"test-list-at-document-end\"');
+REPLACE INTO `store` (`key`, `value`) VALUES ('pad:test-list-at-document-end:revs:2','{\"changeset\":\"Z:e>0*4|1=6*4=7$\",\"meta\":{\"author\":\"a.hiANkoD7mxzPJ70R\",\"timestamp\":1437403678214}}');
 
 /*!40000 ALTER TABLE `store` ENABLE KEYS */;
 UNLOCK TABLES;

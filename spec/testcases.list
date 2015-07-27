@@ -6,4 +6,5 @@ lists
 lists-with-overlapping-format
 multilist
 comments
+list-at-document-end
 # todo: revisions

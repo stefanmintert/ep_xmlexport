@@ -87,9 +87,11 @@ var _getPadLinesMarkup = function (apool, atext, reqOptions, commentCollector, s
         // add lineattributes if there are any, but NOT if lists are enabled (maybe we decide to change this behaviour later)
         var lineAttributesEnabled = !reqOptions.lists  && reqOptions.lineattribs && line.hasLineAttributes();
         
+        var linePlainText = line.getPlaintext(removeLinemarker);
+        var lineAttributeString = line.getAttributeString(removeLinemarker);
+        
         // get inline content
-        var inlineContent = _getInlineMarkup(
-                line.getPlaintext(removeLinemarker), line.getAttributeString(removeLinemarker), 
+        var inlineContent = _getInlineMarkup(linePlainText, lineAttributeString, 
                 apool, reqOptions.regex === true, commentCollector, serializer);
         
         // wrap inline content with markup (line, lists)
