@@ -30,6 +30,8 @@ function _loadComments(padId, callback) {
                 callback(_getCommentArray(padComments.comments, commentReplies.replies));
             });
         });
+    } else {
+	callback([]);
     }
 };
 
