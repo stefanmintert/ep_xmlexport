@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>Unnumbered list:</line>
+
+<list type='bullet'>
+<item><line>item 1</line></item>
+<item><line>item 2</line></item>
+<item><line>item 3</line></item>
+</list>
+<line></line>
+<line>Numbered list:</line>
+
+<list type='number'>
+<item><line>item 1</line></item>
+<item><line>item 2</line></item>
+<item><line>item 3</line></item>
+</list>
+<line></line>
+</content>
+
+</pad>
