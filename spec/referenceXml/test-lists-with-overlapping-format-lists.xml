@@ -4,7 +4,7 @@
 
 <list type='bullet'>
 <item><line><attribute key="bold" value="true">with overlapping</attribute><!-- /bold --></line></item>
-<item><line><attribute key="bold" value="true">format</attribute><!-- /bold --></line></item>
+<item><line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="bold" value="true">*</attribute><!-- /bold --></attribute><!-- /lmkr --></attribute><!-- /insertorder --><attribute key="bold" value="true">format</attribute><!-- /bold --></line></item>
 </list>
 <line></line>
 </content>

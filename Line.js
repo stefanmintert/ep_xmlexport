@@ -1,43 +1,58 @@
 var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 
+
+var LIST_ATTRIBUTE_NAMES = ['list', 'start'];
+var LINEMARKER_ATTRIBUTE_NAMES = ['lmkr', 'insertorder'];
+
+function _isListAttribute(attributeName) {
+    return LIST_ATTRIBUTE_NAMES.indexOf(attributeName) > -1;
+};
+
+function _isLinemarkerAttribute(attributeName) {
+    return LINEMARKER_ATTRIBUTE_NAMES.indexOf(attributeName) > -1;
+};
+
 /**
  * Representation of an EPL attributed line, 
  * provides access to some line analysis results (line attributes, list properties)
- * @param {type} aline the attributeString as returned by EPL's 
+ * @param {type} rawAttributeString the attributeString as returned by EPL's 
  * Changeset.splitAttributionLines(atext.attribs, atext.text)
- * @param {type} text the plain line text
+ * @param {type} rawText the plain line text
  * @param {type} apool the apool object that maps the operators in the attribute string to attribute names
  */
-var Line = function(aline, text, apool){
-    var line = {};
+var Line = function(rawAttributeString, rawText, apool){
+    var extractedText = "";
+    var hasLineAttributes = false;
+    var lineAttributes = [];
+    var inlineAttributeString;
+    var listLevel = 0;
+    var listTypeName;
+    
+    
     function _analyzeLists () {
         // identify list
-        line.listLevel = 0;
-        if (aline) {
-            var opIter = Changeset.opIterator(aline);
+        listLevel = 0;
+        if (rawAttributeString) {
+            var opIter = Changeset.opIterator(rawAttributeString);
             if (opIter.hasNext()) {
                 var listType = Changeset.opAttributeValue(opIter.next(), 'list', apool);
 
                 if (listType) {
-                    lineMarker = true;
                     var listTypeParts = /([a-z]+)([12345678])/.exec(listType);
                     if (listTypeParts) {
-                        line.listTypeName = listTypeParts[1];
-                        line.listLevel = Number(listTypeParts[2]);
+                        listTypeName = listTypeParts[1];
+                        listLevel = Number(listTypeParts[2]);
                     }
                 }
             }
         }
-
-        return line;
     }
     
     function _analyzeLineAttributes () {
         var lineMarkerFound = false;
-        var lineAttributes = [];
 
         // start lineMarker (lmkr) check
-        var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(aline, 0, 1));
+        var firstCharacterOfLineOpIterator = Changeset.opIterator(Changeset.subattribution(rawAttributeString, 0, 1));
 
         if (firstCharacterOfLineOpIterator.hasNext()) {
             var singleOperation = firstCharacterOfLineOpIterator.next();
@@ -52,43 +67,141 @@ var Line = function(aline, text, apool){
             });
         }
         
-        line.hasLineAttributes = lineMarkerFound;
-        line.lineAttributes = lineAttributes;
+        hasLineAttributes = lineMarkerFound;
         
-        if (line.hasLineAttributes) {
+        if (hasLineAttributes) {
             // line text without linemarker ("*")
-            line.text = text.substring(1);
-            line.aline = Changeset.subattribution(aline, 1);
+            extractedText = rawText.substring(1);
+            inlineAttributeString = Changeset.subattribution(rawAttributeString, 1);
         } else {
-            line.text = text;
-            line.aline = aline;
+            extractedText = rawText;
+            inlineAttributeString = rawAttributeString;
         }
     }
     
     _analyzeLists();
     _analyzeLineAttributes();
     
+    var _attributeStringWithoutListAttributes = function(attributeString) {
+        var opIterator = Changeset.opIterator(attributeString);
+        var filteredAttributeString = "";
+        
+        while (opIterator.hasNext()) {
+            var nextOperation = opIterator.next();
+            var filteredAttributes = Changeset.filterAttribNumbers(nextOperation.attribs, function (a) {
+                return !_isListAttribute(apool.numToAttrib[a][0]);
+            });
+            nextOperation.attribs = filteredAttributes;
+            filteredAttributeString += Changeset.opString(nextOperation);
+        }
+        return filteredAttributeString;
+    };
+    
+    
+    var hasList = function(){
+        return listLevel > 0;
+    };
+    
+    var _withoutListAttributes = function(attributes) {
+        return attributes.filter(function(item) {
+            return !_isListAttribute(item[0]);
+        });
+    };
+    
+    var _withoutLmkrAttributes = function(attributes) {
+        return attributes.filter(function(item) {
+            return !_isLinemarkerAttribute(item[0]);
+        });
+    };
+    
+    var _hasNonlistLineAttributes = function() {
+        return _withoutListAttributes(_withoutLmkrAttributes(lineAttributes)).length > 0;
+    };
+    
+    /**
+     * splits the line into line attributes and the remaining plain text and inline attributes
+     * depending on the given parameters 
+     * @param {Boolean} listsEnabled if the client sent the parameter lists=true
+     * @param {Boolean} lineAttributesEnabled if the client sent the parameter lineattribs=true
+     * @return {lineAttributes: Array, inlineAttributeString: String, inlinePlaintext: String}
+     */
+    var extractLineAttributes = function(listsEnabled, lineAttributesEnabled) {
+        if ((!hasList() && !hasLineAttributes) || (!listsEnabled && !lineAttributesEnabled)) {
+                return {
+                    lineAttributes: [],
+                    inlineAttributeString: rawAttributeString,
+                    inlinePlaintext: rawText
+                };
+            }
+            
+            if (listsEnabled && !lineAttributesEnabled) {
+                if (hasList() && _hasNonlistLineAttributes()) {
+                    return {
+                        lineAttributes: [],
+                        inlineAttributeString: _attributeStringWithoutListAttributes(rawAttributeString),
+                        inlinePlaintext: rawText
+                    };
+                } else if (hasList() && !_hasNonlistLineAttributes()){
+                    return {
+                        lineAttributes: [],
+                        inlineAttributeString: inlineAttributeString,
+                        inlinePlaintext: extractedText
+                    };
+                } else if (!hasList() && hasLineAttributes){
+                    return {
+                        lineAttributes: [],
+                        inlineAttributeString: rawAttributeString,
+                        inlinePlaintext: rawText
+                    };
+                } else {
+                    console.error("Plugin error: it seems the developer missed a case here.");
+                }
+            } else if (listsEnabled && lineAttributesEnabled) {
+                if (_hasNonlistLineAttributes()) {
+                    return {
+                        lineAttributes: _withoutListAttributes(lineAttributes),
+                        inlineAttributeString: inlineAttributeString,
+                        inlinePlaintext: extractedText
+                    };
+                } else {
+                    return {
+                        lineAttributes: [],
+                        inlineAttributeString: inlineAttributeString,
+                        inlinePlaintext: extractedText
+                    };
+                }
+            } else if (!listsEnabled && lineAttributesEnabled) {
+                return {
+                    lineAttributes: lineAttributes,
+                    inlineAttributeString: inlineAttributeString,
+                    inlinePlaintext: extractedText
+                };
+            } else {
+                console.error("Plugin error: it seems the developer missed a case here.");
+            }
+    };
+    
+    
     return {
         getPlaintext: function(removeLinemarker){
-            return removeLinemarker ? line.text : text;
+            return removeLinemarker ? extractedText : rawText;
         },
         getAttributeString: function(removeLineAttributes){
-            return removeLineAttributes ? line.aline : aline;
+            return removeLineAttributes ? inlineAttributeString : rawAttributeString;
         },
         hasLineAttributes: function(){
-            return line.hasLineAttributes;
+            return hasLineAttributes;
         },
         getLineAttributes: function() {
-            return line.lineAttributes;
+            return lineAttributes;
         },
-        hasList: function(){
-            return line.listLevel > 0;
-        },
+        extractLineAttributes: extractLineAttributes,
+        hasList: hasList,
         getListLevel: function(){
-            return line.listLevel;
+            return listLevel;
         },
         getListType: function(){
-            return line.listTypeName;
+            return listTypeName;
         }
         
     };
@@ -170,8 +283,7 @@ Line.LineMarkupManager = function(listsEnabled, serializer){
             }
             return xmlPieces.join("");
         },
-        processLine: function(line, lineContent, lineAttributesEnabled) {
-            var lineAttributes = lineAttributesEnabled ? line.getLineAttributes() : [];
+        processLine: function(line, lineAttributes, lineContent) {
             var lineElement = this._wrapWithLineElement(lineAttributes, lineContent);
             //If we are inside a list: wrap with list elements
             if (line.getListLevel() && listsEnabled) {
