@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>A mulitlevel List:</line>
+<line><attribute key="insertorder" value="first"><attribute key="list" value="bullet1"><attribute key="lmkr" value="1"><attribute key="start" value="1">*</attribute><!-- /start --></attribute><!-- /lmkr --></attribute><!-- /list --></attribute><!-- /insertorder -->first Level</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="start" value="1"><attribute key="list" value="bullet2">*</attribute><!-- /list --></attribute><!-- /start --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->second Level</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="start" value="1"><attribute key="list" value="bullet3">*</attribute><!-- /list --></attribute><!-- /start --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->Third Level</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="start" value="2"><attribute key="list" value="bullet2">*</attribute><!-- /list --></attribute><!-- /start --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->second again</line>
+<line>Going on in normal text</line>
+<line></line>
+</content>
+
+</pad>

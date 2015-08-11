@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>A List:</line>
+<line insertorder="first" list="bullet1" lmkr="1" start="1"><attribute key="bold" value="true">with overlapping</attribute><!-- /bold --></line>
+<line bold="true" insertorder="first" list="bullet1" lmkr="1" start="2"><attribute key="bold" value="true">format</attribute><!-- /bold --></line>
+<line></line>
+</content>
+
+</pad>

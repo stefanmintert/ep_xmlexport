@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <line>
+      <attribute key="bold" value="true">These 
+        <attribute key="italic" value="true">formats</attribute>
+        <!-- /italic -->
+      </attribute>
+      <!-- /bold -->
+      <attribute key="italic" value="true"> are overlapping.</attribute>
+      <!-- /italic -->
+    </line>
+  </content>
+</pad>
