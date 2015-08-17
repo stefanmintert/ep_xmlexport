@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>Simple Line</line>
+<line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="lineHeights" value="3">*</attribute><!-- /lineHeights --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->Line with line height</line>
+<line></line>
+<line>List</line>
+<line><attribute key="insertorder" value="first"><attribute key="list" value="bullet1"><attribute key="lmkr" value="1"><attribute key="start" value="1">*</attribute><!-- /start --></attribute><!-- /lmkr --></attribute><!-- /list --></attribute><!-- /insertorder -->list item</line>
+<line><attribute key="insertorder" value="first"><attribute key="list" value="bullet1"><attribute key="lmkr" value="1"><attribute key="start" value="2"><attribute key="lineHeights" value="3">*</attribute><!-- /lineHeights --></attribute><!-- /start --></attribute><!-- /lmkr --></attribute><!-- /list --></attribute><!-- /insertorder -->list item with line height</line>
+<line><attribute key="insertorder" value="first"><attribute key="list" value="bullet1"><attribute key="lmkr" value="1"><attribute key="start" value="3">*</attribute><!-- /start --></attribute><!-- /lmkr --></attribute><!-- /list --></attribute><!-- /insertorder -->list item</line>
+</content>
+
+</pad>

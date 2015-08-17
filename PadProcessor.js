@@ -81,21 +81,15 @@ var _getPadLinesMarkup = function (apool, atext, reqOptions, commentCollector, s
 
     for (var i = 0; i < textLines.length; i++) {
         var line = new Line(attribLines[i], textLines[i], apool);
-
-        // shift textString by one if line attributes are found (due to linemarker '*')
-        var removeLinemarker      = reqOptions.lists  || (reqOptions.lineattribs && line.hasLineAttributes());
-        // add lineattributes if there are any, but NOT if lists are enabled (maybe we decide to change this behaviour later)
-        var lineAttributesEnabled = !reqOptions.lists  && reqOptions.lineattribs && line.hasLineAttributes();
         
-        var linePlainText = line.getPlaintext(removeLinemarker);
-        var lineAttributeString = line.getAttributeString(removeLinemarker);
+        var extractedLine = line.extractLineAttributes(reqOptions.lists === true, reqOptions.lineattribs === true);
         
         // get inline content
-        var inlineContent = _getInlineMarkup(linePlainText, lineAttributeString, 
+        var inlineContent = _getInlineMarkup(extractedLine.inlinePlaintext, extractedLine.inlineAttributeString, 
                 apool, reqOptions.regex === true, commentCollector, serializer);
         
         // wrap inline content with markup (line, lists)
-        lineMarkupManager.processLine(line, inlineContent, lineAttributesEnabled);
+        lineMarkupManager.processLine(line, extractedLine.lineAttributes, inlineContent);
     }
 
     return lineMarkupManager.finishAndReturnXml();

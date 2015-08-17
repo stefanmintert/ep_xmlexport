@@ -7,4 +7,5 @@ lists-with-overlapping-format
 multilist
 comments
 list-at-document-end
+lineheight
 # todo: revisions
