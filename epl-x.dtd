@@ -1,26 +1,26 @@
 <!--
-    DTD for extended XML export of Etherpad Lite 
+    DTD for extended XML export of Etherpad Lite
     according to ep_xmlexport plug-in
-    
+
     Website: https://github.com/stefanmintert/ep_xmlexport
-    
+
     Typical usage:
-    
+
     <!DOCTYPE pad PUBLIC "TODO" "epl-x.dtd">
     <pad>...</pad>
-    
-    
+
+
     PLEASE NOTE:
     This DTD should only be used for validation of XML, that was
     exported from EPL with some output control parameter set to 'true'.
     Otherwise you should validate against generic epl.dtd.
-    This DTD defines some element types for known EPL plug-ins. 
+    This DTD defines some element types for known EPL plug-ins.
     If you use EPL plug-ins, which were not considered when
     defining this DTD, validation of exported XML may fail.
     This is because unknown plug-ins might use EPL-attributes,
-    that become XML attributes not declared in this DTD. 
-    
-    
+    that become XML attributes not declared in this DTD.
+
+
 
    Copyright 2015 Stefan Mintert
 
@@ -41,13 +41,15 @@
 <!ELEMENT pad       (content, comments?)>
 <!ELEMENT content   (line | list)+>
 <!ELEMENT line      (#PCDATA | attribute | matched-text)*>
-<!ATTLIST line      author CDATA #IMPLIED
-                    insertorder CDATA #IMPLIED
-                    list CDATA #IMPLIED
+<!ATTLIST line
+                    align (center | left | justify | right) "left"
+                    author CDATA #IMPLIED
                     heading CDATA #IMPLIED
+                    insertorder CDATA #IMPLIED
+                    lineHeights CDATA #IMPLIED
+                    list CDATA #IMPLIED
                     lmkr CDATA #IMPLIED
                     start CDATA #IMPLIED
-                    align (center | left | justify | right) "left"
 >
 <!ELEMENT list      (item)+>
 <!ATTLIST list      type CDATA #REQUIRED>

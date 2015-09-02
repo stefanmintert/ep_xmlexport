@@ -11,12 +11,14 @@
     "name": "Stefan Mintert",
     "url": "http://www.linkwerk.com/"
   },
-  "version": "2.1.0",
+  "version": "2.1.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/stefanmintert/ep_xmlexport.git"
   },
-  "dependencies": {},
+  "dependencies": {
+    "xml-escape" : ">=1.0.0"
+  },
   "devDependencies": {},
   "optionalDependencies": {
     "jsxml" : ">=0.0.2",
