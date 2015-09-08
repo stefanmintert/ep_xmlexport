@@ -1,6 +1,6 @@
 {
   "name": "ep_xmlexport",
-  "description": "XML Export for Etherpad Lite",
+  "description": "XML Export for Etherpad",
   "homepage": "https://github.com/stefanmintert/ep_xmlexport",
   "keywords": [
     "etherpad",
