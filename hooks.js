@@ -2,6 +2,10 @@ var path = require('path');
 var eejs = require("ep_etherpad-lite/node/eejs");
 var exportXml = require('./ExportXml');
 var prettyData = false;
+var js2xmlparser = require("js2xmlparser");
+var request = require("request");
+var xslt = require("xslt4node");
+var fs = require("fs");
 
 try {
 	prettyData = require('pretty-data').pd;
@@ -29,7 +33,43 @@ exports.expressCreateServer = function (hook_name, args, cb) {
 			if (prettyData && options.pretty) {
 				res.send(prettyData.xml(result));
 			} else {
-				res.send(result);
+
+				// Check to see if this PadId has associated Metadata
+				// FAKED Until we have a valid API endpoint for getting Metadata for a PadId
+				request.get("https://mymadison.io/api/docs/slug/digital-campaign-guide", function(e,r,b){
+					if(e){
+						console.error(e);
+					}
+					console.log(b);
+					if(b.xslt === b.xslt){
+						// FAKED FOR NOW, BILL PLEASE ADD THIS ATTRIBUTE
+						options.xslt = "/home/jose/etherpad-lite/translate.xsl";
+					}
+					// Turn JSON Metadata into XML
+					var xml = js2xmlparser("metadata", b);
+					xml = xml.replace('<?xml version="1.0" encoding="UTF-8"?>','');
+					// Append XML into Pad
+					result = result.replace('<pad>', '<pad>'+xml);
+					// console.log("result", result);
+
+					// Check if Metadata includes XSLT -- FAKED!!
+					if(options.xslt){
+						var config = {};
+						// console.log("Applying XSLT");
+	                                        fs.readFile(options.xslt, 'utf8', function (err,data) {
+							if(err) console.error("Error doing xslt export", e);
+	                                                config.xslt = data;
+	                                                config.source = result;
+	                                                config.result = String;
+	                                                xslt.transform(config, function(e, result){
+	                                                        res.send(result);
+	                                                });
+	                                        });
+
+		                        }else{
+						res.send(result);
+					}
+				});
 			}
 		});
 	});
