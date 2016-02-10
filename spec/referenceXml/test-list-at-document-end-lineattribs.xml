@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>Liste</line>
+<line insertorder="first" list="bullet1" lmkr="1">Punkt1</line>
+</content>
+
+</pad>

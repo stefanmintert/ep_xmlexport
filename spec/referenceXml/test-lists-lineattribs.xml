@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>Unnumbered list:</line>
+<line insertorder="first" list="bullet1" lmkr="1" start="1">item 1</line>
+<line insertorder="first" list="bullet1" lmkr="1" start="2">item 2</line>
+<line insertorder="first" list="bullet1" lmkr="1" start="3">item 3</line>
+<line></line>
+<line>Numbered list:</line>
+<line insertorder="first" list="number1" lmkr="1" start="1">item 1</line>
+<line insertorder="first" list="number1" lmkr="1" start="2">item 2</line>
+<line insertorder="first" list="number1" lmkr="1" start="3">item 3</line>
+<line></line>
+</content>
+
+</pad>

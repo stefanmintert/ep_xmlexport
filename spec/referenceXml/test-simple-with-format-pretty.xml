@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<pad>
+  <content>
+    <line>
+      <attribute key="underline" value="true">Underlined</attribute>
+      <!-- /underline -->
+      <attribute key="bold" value="true">bold</attribute>
+      <!-- /bold -->
+      <attribute key="italic" value="true">italic</attribute>
+      <!-- /italic -->
+      <attribute key="strikethrough" value="true">striked</attribute>
+      <!-- /strikethrough --> text.
+    </line>
+    <line></line>
+  </content>
+</pad>

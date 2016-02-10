@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>A mulitlevel List:</line>
+
+<list type='bullet'>
+<item><line>first Level</line>
+<list type='bullet'>
+<item><line>second Level</line>
+<list type='bullet'>
+<item><line>Third Level</line></item>
+</list>
+</item>
+<item><line>second again</line></item>
+</list>
+</item>
+</list>
+<line>Going on in normal text</line>
+<line></line>
+</content>
+
+</pad>

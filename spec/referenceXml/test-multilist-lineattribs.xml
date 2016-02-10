@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>A mulitlevel List:</line>
+<line insertorder="first" list="bullet1" lmkr="1" start="1">first Level</line>
+<line insertorder="first" list="bullet2" lmkr="1" start="1">second Level</line>
+<line insertorder="first" list="bullet3" lmkr="1" start="1">Third Level</line>
+<line insertorder="first" list="bullet2" lmkr="1" start="2">second again</line>
+<line>Going on in normal text</line>
+<line></line>
+</content>
+
+</pad>

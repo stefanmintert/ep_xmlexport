@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>Simple Line</line>
+<line insertorder="first" lineHeights="3" lmkr="1">Line with line height</line>
+<line></line>
+<line>List</line>
+<line insertorder="first" list="bullet1" lmkr="1" start="1">list item</line>
+<line insertorder="first" lineHeights="3" list="bullet1" lmkr="1" start="2">list item with line height</line>
+<line insertorder="first" list="bullet1" lmkr="1" start="3">list item</line>
+</content>
+
+</pad>

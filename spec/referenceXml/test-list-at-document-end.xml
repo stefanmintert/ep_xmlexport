@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<pad>
+<content><line>Liste</line>
+<line><attribute key="insertorder" value="first"><attribute key="list" value="bullet1"><attribute key="lmkr" value="1">*</attribute><!-- /lmkr --></attribute><!-- /list --></attribute><!-- /insertorder -->Punkt1</line>
+</content>
+
+</pad>
