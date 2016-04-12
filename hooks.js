@@ -8,7 +8,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     var _evalToBoolean = function(stringValue) {
         return typeof stringValue !== 'undefined' && stringValue === 'true';
     };
-    
+
     var _getOptions = function(req) {
         return {
             revision:   (req.params.rev ? req.params.rev : null),
@@ -18,8 +18,8 @@ exports.expressCreateServer = function (hook_name, args, cb) {
             pretty:      _evalToBoolean(req.query.pretty)
         };
     };
-    
-    args.app.get('/p/:pad/:rev?/export/xml', function(req, res, next) {
+
+    var handleXmlRequest = function(req, res, next) {
         var padID = req.params.pad;
         var options = _getOptions(req);
         options.exportFormat = "xml";
@@ -30,8 +30,12 @@ exports.expressCreateServer = function (hook_name, args, cb) {
         }, function(error) {
             res.status(500).send(error);
         });
-    });
-    
+    };
+
+    args.app.get('/p/:pad/:rev?/export/xml', handleXmlRequest);
+
+    args.app.get('/api/1.2.12/p/:pad/:rev?/export/xml', handleXmlRequest);
+
     /**
     * Just a first Proof of Concept, DO NOT use this!!!
     */
