@@ -1,4 +1,4 @@
-var path = require('path');
+var fs = require("fs");
 var eejs = require("ep_etherpad-lite/node/eejs");
 var ExportService = require("./ExportService");
 
@@ -33,8 +33,19 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     };
 
     args.app.get('/p/:pad/:rev?/export/xml', handleXmlRequest);
+    
+    // adapted from https://github.com/ether/etherpad-lite/blob/develop/src/node/handler/APIHandler.js
+    var apikey = fs.readFileSync("./APIKEY.txt","utf8");    
+    var checkApiKey = function(req, res, next) {
+        if (req.query.apikey !== apikey) {
+            res.statusCode = 401;
+            res.send({code: 4, message: "no or wrong API Key", data: null});
+        } else {
+            next();
+        }
+    };
 
-    args.app.get('/api/1.2.12/p/:pad/:rev?/export/xml', handleXmlRequest);
+    args.app.get('/api/:apiVersion/p/:pad/:rev?/export/xml', checkApiKey, handleXmlRequest);
 
     /**
     * Just a first Proof of Concept, DO NOT use this!!!
