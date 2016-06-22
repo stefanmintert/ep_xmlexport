@@ -50,11 +50,17 @@ function _loadPad (padId, revision, callback) {
         throwIfError(err);
         if (revision) {
             pad.getInternalRevisionAText(revision, function (err, revisionAtext) {
-                throwIfError(err);
-                callback({ id: padId, pool: pad.pool, atext: revisionAtext});
+                throwIfError(err);                
+                pad.getRevisionDate(revision, function(err, revisionDate) {
+                    throwIfError(err);
+                    callback({ id: padId, pool: pad.pool, atext: revisionAtext, revisionDate: revisionDate});
+                });
             });
         } else {
-            callback({ id: padId, pool: pad.pool, atext: pad.atext});
+            pad.getLastEdit(function(err, lastEdit){
+                throwIfError(err);
+                callback({ id: padId, pool: pad.pool, atext: pad.atext, revisionDate: lastEdit});
+            });
         }
     });
 };

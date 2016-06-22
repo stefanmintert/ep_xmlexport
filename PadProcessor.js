@@ -53,7 +53,7 @@ var getSerializedPad = function(pad, commentLoader, serializer, reqOptions, call
     var commentCollector = new CommentCollector();
     var contentMarkup = _getPadLinesMarkup(pad.pool, pad.atext, reqOptions, commentCollector, serializer);
     commentLoader.getComments(pad.id, commentCollector.list(), function(comments){
-        callback(serializer.getWrapup(contentMarkup, comments));
+        callback(serializer.getWrapup(contentMarkup, comments, pad.revisionDate));
     });
 };
 

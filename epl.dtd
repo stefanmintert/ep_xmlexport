@@ -27,6 +27,7 @@
 
 -->
 <!ELEMENT pad       (content, comments?)>
+<!ATTLIST pad       revisionDate CDATA #IMPLIED>
 <!ELEMENT content   (line+)>
 <!ELEMENT line      (#PCDATA | attribute)*>
 <!ELEMENT attribute (#PCDATA | attribute)*>

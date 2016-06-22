@@ -39,6 +39,7 @@
 
 -->
 <!ELEMENT pad       (content, comments?)>
+<!ATTLIST pad       revisionDate CDATA #IMPLIED>
 <!ELEMENT content   (line | list)+>
 <!ELEMENT line      (#PCDATA | attribute | matched-text)*>
 <!ATTLIST line
