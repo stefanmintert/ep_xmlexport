@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<pad revisionDate="1438097317497'>
+<pad revisionDate="1438097317497">
 <content><line>Simple Line</line>
 <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="lineHeights" value="3">*</attribute><!-- /lineHeights --></attribute><!-- /lmkr --></attribute><!-- /insertorder -->Line with line height</line>
 <line></line>

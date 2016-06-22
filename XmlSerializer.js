@@ -12,7 +12,7 @@ try {
 var XmlSerializer = {
     startDocument: function(revisionDate){
         var padStartTag = '<pad' +
-            (revisionDate ? ' revisionDate="' + revisionDate + "'" : '') +
+            (revisionDate ? ' revisionDate="' + revisionDate + '"' : '') +
             '>';
         return '<?xml version="1.0"?>\n' + padStartTag + '\n';
     },

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<pad revisionDate="1437403678214'>
+<pad revisionDate="1437403678214">
 <content><line>Liste</line>
 <line><attribute key="insertorder" value="first"><attribute key="list" value="bullet1"><attribute key="lmkr" value="1">*</attribute><!-- /lmkr --></attribute><!-- /list --></attribute><!-- /insertorder -->Punkt1</line>
 </content>

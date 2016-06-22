@@ -116,7 +116,7 @@ The request
 exports [helloworld.xml](./samples/helloworld.xml)
 ```xml
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1435916467677">
   <content>
     <line>Hello World</line>
     <line></line>
@@ -138,7 +138,7 @@ exports [heading-generic.xml](./samples/heading-generic.xml)
 
 ```xml
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1435916467677">
   <content>
     <line><attribute key="heading" value="h1"><attribute key="insertorder" value="first"><attribute key="lmkr" value="1">*</attribute>Hello World</line>
     <line>A heading above</line>
@@ -157,7 +157,7 @@ exports [heading-extended.xml](./samples/heading-extended.xml)
 
 ```xml
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1435916467677">
   <content>
     <line heading="h1" insertorder="first" lmkr="1">Hello World</line>
     <line>A heading above</line>
@@ -180,7 +180,7 @@ exports [list-generic.xml](./samples/list-generic.xml)
 
 ```xml
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1435916467677">
   <content>
     <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="1">*</attribute>List item a</line>
     <line><attribute key="insertorder" value="first"><attribute key="lmkr" value="1"><attribute key="list" value="bullet1"><attribute key="start" value="2">*</attribute>List item b</line>
@@ -200,7 +200,7 @@ exports [list-lineattribs.xml](./samples/list-lineattribs.xml)
 
 ```xml
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1435916467677">
   <content>
     <line insertorder="first" list="bullet1" lmkr="1" start="1">List item a</line>
     <line insertorder="first" list="bullet1" lmkr="1" start="2">List item b</line>
@@ -220,7 +220,7 @@ exports [list-lists.xml](./samples/list-lists.xml)
 
 ```xml
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1435916467677">
   <content>
     <list type="bullet">
       <item>
@@ -250,7 +250,7 @@ exports [comment-reply.xml](./samples/comment-reply.xml)
 
 ```xml
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1435916467677">
   <content>
     <line>Hello <attribute key="comment" value="c-Bu5TKhq62OyBX9iI">Wolrd</attribute></line>
     <line></line>
@@ -294,6 +294,10 @@ My own part of work is available under the following license.
 
 
 ## Version history
+
+### 2.1.6
+
+* added revision date for pad to xml (epl.dtd and epl-x.dtd was changed)
 
 ### 2.1.5
 
