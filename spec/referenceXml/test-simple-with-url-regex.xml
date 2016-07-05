@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1435916312913">
 <content><line>This url <matched-text key="uri" value="http://etherpad.org">http://etherpad.org</matched-text> is important.</line>
 <line></line>
 </content>

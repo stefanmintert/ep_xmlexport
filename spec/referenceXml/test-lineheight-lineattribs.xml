@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<pad>
+<pad revisionDate="1438097317497">
 <content><line>Simple Line</line>
 <line insertorder="first" lineHeights="3" lmkr="1">Line with line height</line>
 <line></line>

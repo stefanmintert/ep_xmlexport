@@ -10,8 +10,11 @@ try {
 }
 
 var XmlSerializer = {
-    startDocument: function(){
-        return '<?xml version="1.0"?>\n<pad>\n';
+    startDocument: function(revisionDate){
+        var padStartTag = '<pad' +
+            (revisionDate ? ' revisionDate="' + revisionDate + '"' : '') +
+            '>';
+        return '<?xml version="1.0"?>\n' + padStartTag + '\n';
     },
     endDocument: function(){
         return '\n</pad>';
@@ -68,8 +71,8 @@ var XmlSerializer = {
      * @param {type} comments
      * @returns {String}
      */
-    getWrapup: function(contentMarkup, commentsMl){
-        return this.startDocument() + this.startContent() +
+    getWrapup: function(contentMarkup, commentsMl, revisionDate){
+        return this.startDocument(revisionDate) + this.startContent() +
             contentMarkup + 
             this.endContent() + 
             (jsxml && commentsMl.length > 1 ? jsxml.toXml(commentsMl) : "") + 
