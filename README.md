@@ -2,6 +2,8 @@
 
 This plug-in lets you export the content of a pad as XML.
 
+**THIS REPO IS NO LONGER MAINTAINED**
+
 ## Download and Install
 
 Available on [github](https://github.com/stefanmintert/ep_xmlexport) and [npm](https://www.npmjs.com/package/ep_xmlexport)
